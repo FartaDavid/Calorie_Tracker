@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calorie Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans pb-10">
+
+    <div class="max-w-md mx-auto p-4">
+        <!-- Titlu -->
+        <header class="text-center my-6">
+            <h1 class="text-2xl font-bold text-indigo-600">Calorie Tracker</h1>
+            <p class="text-sm text-gray-500">Smart AI Tracker pe porții</p>
+        </header>
+
+        <!-- Selector Profil -->
+        <div class="flex bg-gray-200 p-1 rounded-xl mb-6">
+            <button id="btn-user1" onclick="switchUser('user1')" class="flex-1 py-2 font-semibold rounded-lg text-sm transition bg-white shadow text-indigo-600">David</button>
+            <button id="btn-user2" onclick="switchUser('user2')" class="flex-1 py-2 font-semibold rounded-lg text-sm transition text-gray-600">Iraida</button>
+        </div>
+
+        <!-- Card Rezumat Zilnic -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6 text-center">
+            <h2 id="current-user-title" class="text-lg font-bold text-gray-700 mb-1">Profil: David</h2>
+            <div class="text-4xl font-extrabold text-indigo-600 my-2"><span id="total-calories">0</span> <span class="text-lg text-gray-400 font-normal">/ 2000 kcal</span></div>
+            <div class="w-full bg-gray-200 h-3 rounded-full overflow-hidden mt-4">
+                <div id="progress-bar" class="bg-indigo-600 h-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Formular Adăugare -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6 relative">
+            <h3 class="font-bold text-gray-700 mb-3">Ce ai mâncat?</h3>
+            <form id="calorie-form" onsubmit="addFood(event)" class="space-y-3">
+                
+                <!-- Input Căutare -->
+                <div class="relative">
+                    <input type="text" id="food-name" placeholder="Ex: o banană, 2 ouă ochiuri, iaurt zuzu..." oninput="handleSearch()" required autocomplete="off"
+                        class="w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    <span id="loading-spinner" class="hidden absolute right-3 top-3 text-xs text-indigo-600 font-semibold">Se cauta tata...</span>
+                    
+                    <!-- Dropdown Sugestii -->
+                    <div id="suggestions-box" class="absolute left-0 right-0 bg-white border border-gray-200 rounded-xl mt-1 shadow-xl max-h-60 overflow-y-auto hidden z-20 divide-y divide-gray-100"></div>
+                </div>
+
+                <!-- Grid pentru Calorii/Porție și Număr Porții -->
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-xs text-gray-500 ml-1">Calorii / porție</label>
+                        <input type="number" id="kcal-per-portion" placeholder="kcal" oninput="calculateTotalKcal()" required
+                            class="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-gray-50">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 ml-1">Nr. porții</label>
+                        <input type="number" step="1" id="food-portions" value="1" placeholder="Porții" oninput="calculateTotalKcal()" required
+                            class="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    </div>
+                </div>
+
+                <!-- Total Calculat Automat -->
+                <div class="bg-indigo-50 p-3 rounded-xl flex justify-between items-center">
+                    <span class="text-sm font-medium text-indigo-900">Total de adăugat:</span>
+                    <span class="text-lg font-bold text-indigo-600"><span id="calculated-kcal">0</span> kcal</span>
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-2.5 rounded-xl hover:bg-indigo-700 transition text-sm shadow-md">
+                    Adaugă în listă
+                </button>
+            </form>
+        </div>
+
+        <!-- Lista de alimente consumate -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+            <h3 class="font-bold text-gray-700 mb-3">Consumat astăzi</h3>
+            <div id="food-list" class="space-y-2 max-h-60 overflow-y-auto">
+                <p class="text-gray-400 text-sm text-center py-4">Niciun aliment adăugat astăzi.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = 'user1';
+        const userNames = { user1: 'David', user2: 'Iraida' };
+        const dailyGoal = 2000;
+        let searchTimeout = null;
+        let selectedPortionLabel = '1 porție';
+
+        function switchUser(user) {
+            currentUser = user;
+            document.getElementById('btn-user1').className = user === 'user1' ? 'flex-1 py-2 font-semibold rounded-lg text-sm transition bg-white shadow text-indigo-600' : 'flex-1 py-2 font-semibold rounded-lg text-sm transition text-gray-600';
+            document.getElementById('btn-user2').className = user === 'user2' ? 'flex-1 py-2 font-semibold rounded-lg text-sm transition bg-white shadow text-indigo-600' : 'flex-1 py-2 font-semibold rounded-lg text-sm transition text-gray-600';
+            document.getElementById('current-user-title').innerText = `Profil: ${userNames[user]}`;
+            loadMeals();
+        }
+
+        function handleSearch() {
+            clearTimeout(searchTimeout);
+            const query = document.getElementById('food-name').value.trim();
+            const box = document.getElementById('suggestions-box');
+
+            if (query.length < 2) {
+                box.classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('loading-spinner').classList.remove('hidden');
+            searchTimeout = setTimeout(() => fetchFoodFromBackend(query), 600);
+        }
+
+        async function fetchFoodFromBackend(query) {
+            const box = document.getElementById('suggestions-box');
+            const spinner = document.getElementById('loading-spinner');
+
+            try {
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                const validProducts = await response.json();
+                spinner.classList.add('hidden');
+
+                if (validProducts.length === 0) {
+                    box.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">Niciun rezultat. Poți scrie caloriile manual mai jos.</div>`;
+                    box.classList.remove('hidden');
+                    return;
+                }
+
+                box.innerHTML = validProducts.map(product => `
+                    <div onclick="selectFood('${product.nume}', '${product.portie}', ${product.kcal})" class="px-4 py-2.5 hover:bg-indigo-50 cursor-pointer text-sm flex justify-between items-center transition">
+                        <div class="pr-2">
+                            <p class="font-medium text-gray-800">${product.nume}</p>
+                            <p class="text-xs text-gray-400">${product.portie}</p>
+                        </div>
+                        <span class="text-indigo-600 font-bold text-xs whitespace-nowrap bg-indigo-50 px-2 py-1 rounded-md">${product.kcal} kcal</span>
+                    </div>
+                `).join('');
+
+                box.classList.remove('hidden');
+            } catch (error) {
+                spinner.classList.add('hidden');
+                console.error("Eroare server:", error);
+            }
+        }
+
+        function selectFood(name, portionLabel, kcal) {
+            document.getElementById('food-name').value = name;
+            document.getElementById('kcal-per-portion').value = kcal;
+            document.getElementById('food-portions').value = 1;
+            selectedPortionLabel = portionLabel.replace('⭐ ', '');
+            document.getElementById('suggestions-box').classList.add('hidden');
+            calculateTotalKcal();
+        }
+
+        function calculateTotalKcal() {
+            const kcalPortion = parseFloat(document.getElementById('kcal-per-portion').value) || 0;
+            const portions = parseFloat(document.getElementById('food-portions').value) || 0;
+            const total = Math.round(kcalPortion * portions);
+            document.getElementById('calculated-kcal').innerText = total;
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!document.getElementById('food-name').contains(e.target)) {
+                document.getElementById('suggestions-box').classList.add('hidden');
+            }
+        });
+
+        async function addFood(event) {
+            event.preventDefault();
+            const baseName = document.getElementById('food-name').value;
+            const portions = parseFloat(document.getElementById('food-portions').value) || 1;
+            const kcalUnitar = parseInt(document.getElementById('kcal-per-portion').value) || 0;
+            const totalCalories = parseInt(document.getElementById('calculated-kcal').innerText);
+
+            if (totalCalories <= 0) return;
+
+            const displayLabel = portions === 1 
+                ? `${baseName} (${selectedPortionLabel})` 
+                : `${baseName} (${portions}x ${selectedPortionLabel})`;
+
+            await fetch('/api/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    utilizator: currentUser,
+                    aliment: displayLabel,
+                    calorii: totalCalories,
+                    nume_baza: baseName,
+                    portie_baza: selectedPortionLabel,
+                    kcal_unitar: kcalUnitar
+                })
+            });
+
+            document.getElementById('calorie-form').reset();
+            document.getElementById('food-portions').value = 1;
+            document.getElementById('calculated-kcal').innerText = "0";
+            selectedPortionLabel = '1 porție';
+            loadMeals();
+        }
+
+        async function deleteFood(id) {
+            await fetch(`/api/delete/${id}`, { method: 'DELETE' });
+            loadMeals();
+        }
+
+        async function loadMeals() {
+            const response = await fetch(`/api/meals/${currentUser}`);
+            const userItems = await response.json();
+
+            const listContainer = document.getElementById('food-list');
+            const totalElement = document.getElementById('total-calories');
+            const progressBar = document.getElementById('progress-bar');
+
+            let total = userItems.reduce((sum, item) => sum + item.calories, 0);
+            totalElement.innerText = total;
+            let percentage = Math.min((total / dailyGoal) * 100, 100);
+            progressBar.style.width = `${percentage}%`;
+
+            if (userItems.length === 0) {
+                listContainer.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Niciun aliment adăugat astăzi.</p>';
+                return;
+            }
+
+            listContainer.innerHTML = userItems.map(item => `
+                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <div class="pr-2">
+                        <p class="font-medium text-sm text-gray-800">${item.name}</p>
+                        <p class="text-xs text-indigo-600 font-semibold">${item.calories} kcal</p>
+                    </div>
+                    <button onclick="deleteFood(${item.id})" class="text-red-400 hover:text-red-600 text-xs font-bold px-2 py-1">✕</button>
+                </div>
+            `).join('');
+        }
+
+        loadMeals();
+    </script>
+</body>
+</html>
