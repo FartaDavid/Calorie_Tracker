@@ -10,7 +10,7 @@ from pydantic import BaseModel
 app = Flask(__name__)
 
 # Recomandat: setează cheia în terminal cu `export GEMINI_API_KEY="cheia_ta"`
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6JGOWel6LeZsN0ShEdpXTPIrYbC2u3goLvF7Iq6IZBDCA")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
 print("--- Modele disponibile pe cheia ta ---")
 for m in client.models.list():
