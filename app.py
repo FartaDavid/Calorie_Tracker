@@ -1,28 +1,39 @@
 import os
 import json
 import sqlite3
-from datetime import date
-from flask import Flask, render_template, request, jsonify
+from datetime import date, timedelta
+from dotenv import load_dotenv
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from werkzeug.security import generate_password_hash, check_password_hash
 from google import genai
 from google.genai import types
 from pydantic import BaseModel
 
 app = Flask(__name__)
+# Cheie secretă pentru criptarea cookie-urilor de sesiune
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "cheie-secreta-super-sigura-calorii-2026")
+app.permanent_session_lifetime = timedelta(days=30)
 
-# Recomandat: setează cheia în terminal cu `export GEMINI_API_KEY="cheia_ta"`
+load_dotenv(override=True)
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
-print("--- Modele disponibile pe cheia ta ---")
-for m in client.models.list():
-    if "flash" in m.name.lower() or "lite" in m.name.lower():
-        print(m.name)
-print("--------------------------------------")
 
 # 1. Inițializarea bazei de date SQLite
 def init_db():
     conn = sqlite3.connect('calories.db')
     c = conn.cursor()
     
+    # Tabel NOU pentru conturile utilizatorilor
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            daily_goal INTEGER NOT NULL DEFAULT 2000
+        )
+    ''')
+    
+    # Tabelul pentru mesele consumate (legat de username)
     c.execute('''
         CREATE TABLE IF NOT EXISTS meals (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,6 +44,7 @@ def init_db():
         )
     ''')
     
+    # Catalogul comun de alimente pe porții
     c.execute('''
         CREATE TABLE IF NOT EXISTS alimente_locale (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,12 +75,71 @@ def init_db():
 
 init_db()
 
-# 2. Pagina principală
+# 2. Pagina principală (trimite starea de logare către HTML)
 @app.route('/')
 def acasa():
-    return render_template('index.html')
+    if 'username' in session:
+        return render_template(
+            'index.html',
+            logged_in=True,
+            username=session['username'],
+            daily_goal=session.get('daily_goal', 2000)
+        )
+    return render_template('index.html', logged_in=False, username='', daily_goal=2000)
 
-# 3. Căutare hibridă: Locală (instant) + AI Gemini (porții naturale)
+# 3. Rute pentru Înregistrare, Login și Logout
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.json
+    username = data.get('username', '').strip().lower()
+    password = data.get('password', '').strip()
+    daily_goal = int(data.get('daily_goal') or 2000)
+
+    if len(username) < 3 or len(password) < 4:
+        return jsonify({'status': 'error', 'message': 'Username-ul trebuie să aibă min. 3 caractere și parola min. 4.'}), 400
+
+    conn = sqlite3.connect('calories.db')
+    c = conn.cursor()
+    try:
+        pw_hash = generate_password_hash(password)
+        c.execute('INSERT INTO users (username, password_hash, daily_goal) VALUES (?, ?, ?)', (username, pw_hash, daily_goal))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        conn.close()
+        return jsonify({'status': 'error', 'message': 'Acest username există deja. Alege altul sau loghează-te.'}), 400
+    conn.close()
+
+    session.permanent = True
+    session['username'] = username
+    session['daily_goal'] = daily_goal
+    return jsonify({'status': 'succes'})
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username', '').strip().lower()
+    password = data.get('password', '').strip()
+
+    conn = sqlite3.connect('calories.db')
+    c = conn.cursor()
+    c.execute('SELECT password_hash, daily_goal FROM users WHERE username = ?', (username,))
+    row = c.fetchone()
+    conn.close()
+
+    if not row or not check_password_hash(row[0], password):
+        return jsonify({'status': 'error', 'message': 'Username sau parolă incorectă.'}), 401
+
+    session.permanent = True
+    session['username'] = username
+    session['daily_goal'] = row[1]
+    return jsonify({'status': 'succes'})
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('acasa'))
+
+# 4. Căutare hibridă: Locală + AI Gemini
 class SugestieAliment(BaseModel):
     nume: str
     portie: str
@@ -79,14 +150,15 @@ class ListaSugestii(BaseModel):
 
 @app.route('/api/search')
 def search_aliment():
+    if 'username' not in session:
+        return jsonify([]), 401
+
     query = request.args.get('q', '').strip()
-    print(f"--> [SEARCH] Am primit de la browser: '{query}'")
     if len(query) < 2:
         return jsonify([])
 
     rezultate_finale = []
 
-    # A. Căutăm mai întâi în baza de date locală
     conn = sqlite3.connect('calories.db')
     c = conn.cursor()
     c.execute('SELECT nume, portie, kcal_portie FROM alimente_locale WHERE nume LIKE ? LIMIT 4', (f'%{query}%',))
@@ -98,7 +170,6 @@ def search_aliment():
         })
     conn.close()
 
-    # B. Completăm cu AI Gemini pentru porții naturale și produse din România
     prompt = f"""
     Ești un expert nutriționist. Utilizatorul caută: "{query}".
     Oferă între 1 și 4 variante relevante în limba română (inclusiv produse românești dacă se potrivește, ex: Zuzu, Napolact, covrigi, sarmale).
@@ -120,7 +191,6 @@ def search_aliment():
         )
         date_ai = json.loads(response.text)
         for item in date_ai.get('rezultate', []):
-            # Evităm duplicatele dacă există deja în local
             if not any(r['nume'].lower() == item['nume'].lower() for r in rezultate_finale):
                 rezultate_finale.append({
                     'nume': item['nume'].replace("'", "").replace('"', ''),
@@ -132,22 +202,24 @@ def search_aliment():
 
     return jsonify(rezultate_finale)
 
-# 4. Adăugare masă + salvare automată în catalogul local
+# 5. Adăugare masă pentru utilizatorul logat în sesiune
 @app.route('/api/add', methods=['POST'])
 def add_meal():
+    if 'username' not in session:
+        return jsonify({'status': 'unauthorized'}), 401
+
     data = request.json
     today = str(date.today())
+    current_user = session['username']
     
     conn = sqlite3.connect('calories.db')
     c = conn.cursor()
     
-    # Salvăm în jurnalul zilnic
     c.execute(
         'INSERT INTO meals (user, aliment, calories, data) VALUES (?, ?, ?, ?)',
-        (data['utilizator'], data['aliment'], data['calorii'], today)
+        (current_user, data['aliment'], data['calorii'], today)
     )
     
-    # Învățăm automat alimentul în catalogul local pentru viitor
     if data.get('nume_baza') and data.get('kcal_unitar'):
         c.execute(
             'INSERT OR IGNORE INTO alimente_locale (nume, portie, kcal_portie) VALUES (?, ?, ?)',
@@ -158,15 +230,19 @@ def add_meal():
     conn.close()
     return jsonify({'status': 'succes'})
 
-# 5. Preluare mese pentru ziua curentă
-@app.route('/api/meals/<user>')
-def get_meals(user):
+# 6. Preluare mese exclusiv pentru utilizatorul logat
+@app.route('/api/meals')
+def get_meals():
+    if 'username' not in session:
+        return jsonify([]), 401
+
     today = str(date.today())
+    current_user = session['username']
     conn = sqlite3.connect('calories.db')
     c = conn.cursor()
     c.execute(
         'SELECT id, aliment, calories FROM meals WHERE user = ? AND data = ? ORDER BY id DESC',
-        (user, today)
+        (current_user, today)
     )
     lines = c.fetchall()
     conn.close()
@@ -174,12 +250,15 @@ def get_meals(user):
     meals_list = [{'id': l[0], 'name': l[1], 'calories': l[2]} for l in lines]
     return jsonify(meals_list)
 
-# 6. Ștergere masă
+# 7. Ștergere masă (doar dacă aparține utilizatorului logat)
 @app.route('/api/delete/<int:id_meal>', methods=['DELETE'])
 def delete_meal(id_meal):
+    if 'username' not in session:
+        return jsonify({'status': 'unauthorized'}), 401
+
     conn = sqlite3.connect('calories.db')
     c = conn.cursor()
-    c.execute('DELETE FROM meals WHERE id = ?', (id_meal,))
+    c.execute('DELETE FROM meals WHERE id = ? AND user = ?', (id_meal, session['username']))
     conn.commit()
     conn.close()
     return jsonify({'status': 'deleted'})
