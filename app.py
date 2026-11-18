@@ -149,6 +149,42 @@ def init_db():
 
 init_db()
 
+# Helper: Compute clean daily macro targets based on calorie goal & latest weight
+def compute_macro_targets(daily_goal, weight_kg=None):
+    # Protein: ~1.8g/kg if weight is known (capped safely), otherwise 25% of calories
+    if weight_kg and weight_kg > 0:
+        protein_g = int(round((weight_kg * 1.8) / 5.0) * 5)
+        # Ensure protein doesn't exceed 40% of total kcal
+        max_prot = int((daily_goal * 0.40) / 4)
+        protein_g = min(protein_g, max_prot)
+    else:
+        protein_g = int(round(((daily_goal * 0.25) / 4.0) / 5.0) * 5)
+
+    # Fat: ~25% of calories (9 kcal/g), rounded to nearest 5g
+    fat_g = int(round(((daily_goal * 0.25) / 9.0) / 5.0) * 5)
+
+    # Carbs: remaining calories (4 kcal/g), rounded to nearest 5g
+    remaining_kcal = max(0, daily_goal - (protein_g * 4) - (fat_g * 9))
+    carbs_g = int(round((remaining_kcal / 4.0) / 5.0) * 5)
+
+    # Fiber: standard ~14g per 1000 kcal
+    fiber_g = max(20, int(round((daily_goal / 1000.0) * 14)))
+
+    return {
+        'protein': protein_g,
+        'carbs': carbs_g,
+        'fat': fat_g,
+        'fiber': fiber_g
+    }
+
+def get_user_latest_weight(cursor, username):
+    cursor.execute(
+        'SELECT weight_kg FROM weight_logs WHERE user = ? ORDER BY data DESC LIMIT 1',
+        (username,)
+    )
+    row = cursor.fetchone()
+    return row[0] if row else None
+
 # 2. Home route
 @app.route('/')
 def acasa():
@@ -157,17 +193,27 @@ def acasa():
         c = conn.cursor()
         c.execute('SELECT daily_goal FROM users WHERE username = ?', (session['username'],))
         row = c.fetchone()
-        conn.close()
         goal = row[0] if row else session.get('daily_goal', 2000)
+        latest_w = get_user_latest_weight(c, session['username'])
+        conn.close()
+
         session['daily_goal'] = goal
+        macros = compute_macro_targets(goal, latest_w)
 
         return render_template(
             'index.html',
             logged_in=True,
             username=session['username'],
-            daily_goal=goal
+            daily_goal=goal,
+            macro_targets=macros
         )
-    return render_template('index.html', logged_in=False, username='', daily_goal=2000)
+    return render_template(
+        'index.html',
+        logged_in=False,
+        username='',
+        daily_goal=2000,
+        macro_targets={'protein': 125, 'carbs': 250, 'fat': 55, 'fiber': 28}
+    )
 
 # 3. Auth routes
 @app.route('/api/register', methods=['POST'])
@@ -540,9 +586,17 @@ def save_weight():
            ON CONFLICT(user, data) DO UPDATE SET weight_kg = excluded.weight_kg''',
         (session['username'], weight_kg, target_date)
     )
+    c.execute('SELECT daily_goal FROM users WHERE username = ?', (session['username'],))
+    u_row = c.fetchone()
+    goal = u_row[0] if u_row else session.get('daily_goal', 2000)
+    latest_w = get_user_latest_weight(c, session['username'])
     conn.commit()
     conn.close()
-    return jsonify({'status': 'succes'})
+
+    return jsonify({
+        'status': 'succes',
+        'macro_targets': compute_macro_targets(goal, latest_w)
+    })
 
 @app.route('/api/weight/<int:id_weight>', methods=['DELETE'])
 def delete_weight(id_weight):
@@ -552,11 +606,19 @@ def delete_weight(id_weight):
     conn = sqlite3.connect('calories.db')
     c = conn.cursor()
     c.execute('DELETE FROM weight_logs WHERE id = ? AND user = ?', (id_weight, session['username']))
+    c.execute('SELECT daily_goal FROM users WHERE username = ?', (session['username'],))
+    u_row = c.fetchone()
+    goal = u_row[0] if u_row else session.get('daily_goal', 2000)
+    latest_w = get_user_latest_weight(c, session['username'])
     conn.commit()
     conn.close()
-    return jsonify({'status': 'deleted'})
 
-# 10. User Profile Settings & AI Calorie Recommendation
+    return jsonify({
+        'status': 'deleted',
+        'macro_targets': compute_macro_targets(goal, latest_w)
+    })
+
+# 10. User Profile Settings & AI Calorie/Macro Recommendation
 def calculate_age(birth_date_str):
     if not birth_date_str:
         return None
@@ -579,6 +641,7 @@ def get_profile():
         (session['username'],)
     )
     row = c.fetchone()
+    latest_w = get_user_latest_weight(c, session['username'])
     conn.close()
 
     if not row:
@@ -587,6 +650,7 @@ def get_profile():
     daily_goal, height_cm, birth_date, gender, activity_level = row
     return jsonify({
         'daily_goal': daily_goal,
+        'macro_targets': compute_macro_targets(daily_goal, latest_w),
         'height_cm': height_cm,
         'birth_date': birth_date,
         'age': calculate_age(birth_date),
@@ -635,6 +699,7 @@ def update_profile():
            WHERE username = ?''',
         (daily_goal, height_cm, birth_date, gender, activity_level, session['username'])
     )
+    latest_w = get_user_latest_weight(c, session['username'])
     conn.commit()
     conn.close()
 
@@ -642,13 +707,11 @@ def update_profile():
     return jsonify({
         'status': 'succes',
         'daily_goal': daily_goal,
+        'macro_targets': compute_macro_targets(daily_goal, latest_w),
         'age': calculate_age(birth_date)
     })
 
-class CalorieRecommendation(BaseModel):
-    maintenance_kcal: int
-    weight_loss_kcal: int
-    muscle_gain_kcal: int
+class CalorieAdviceText(BaseModel):
     advice: str
 
 @app.route('/api/ai_calorie_recommendation', methods=['POST'])
@@ -663,12 +726,7 @@ def ai_calorie_recommendation():
         (session['username'],)
     )
     user_row = c.fetchone()
-
-    c.execute(
-        'SELECT weight_kg, data FROM weight_logs WHERE user = ? ORDER BY data DESC LIMIT 1',
-        (session['username'],)
-    )
-    weight_row = c.fetchone()
+    latest_weight = get_user_latest_weight(c, session['username'])
     conn.close()
 
     height_cm = user_row[0] if user_row else None
@@ -676,7 +734,6 @@ def ai_calorie_recommendation():
     gender = (user_row[2] if user_row else None) or 'unspecified'
     activity_level = (user_row[3] if user_row else None) or 'moderate'
     age = calculate_age(birth_date)
-    latest_weight = weight_row[0] if weight_row else None
 
     if not height_cm or not age or not latest_weight:
         missing = []
@@ -691,20 +748,45 @@ def ai_calorie_recommendation():
             'message': f"Please save your {', '.join(missing)} first so AI can calculate your personalized calorie needs."
         }), 400
 
-    prompt = f"""
-    You are an expert clinical nutritionist. Calculate realistic daily calorie targets using the Mifflin-St Jeor formula and activity multiplier for this user:
-    - Age: {age} years
-    - Height: {height_cm} cm
-    - Current Weight: {latest_weight} kg
-    - Biological Sex: {gender} (if 'unspecified', average male and female BMR)
-    - Activity Level: {activity_level}
+    # 1. Exact Mifflin-St Jeor BMR
+    base_bmr = (10.0 * latest_weight) + (6.25 * height_cm) - (5.0 * age)
+    if gender == 'male':
+        bmr = base_bmr + 5.0
+    elif gender == 'female':
+        bmr = base_bmr - 161.0
+    else:
+        bmr = base_bmr - 78.0
 
-    Return:
-    - maintenance_kcal: integer TDEE for maintaining weight
-    - weight_loss_kcal: integer safe moderate deficit (~400-500 kcal below maintenance, never dangerously low)
-    - muscle_gain_kcal: integer lean surplus (~250-350 kcal above maintenance)
-    - advice: concise, friendly 2-sentence explanation in English mentioning their estimated BMR/TDEE and practical macro/calorie guidance.
+    # 2. Standard Activity Multipliers
+    multipliers = {
+        'sedentary': 1.2,
+        'light': 1.375,
+        'moderate': 1.55,
+        'active': 1.725
+    }
+    mult = multipliers.get(activity_level, 1.375)
+    raw_tdee = bmr * mult
+
+    # 3. Clean rounding to nearest 50 kcal (e.g., 2800.53 -> 2800)
+    maintenance_kcal = int(round(raw_tdee / 50.0) * 50)
+    weight_loss_kcal = max(1200, maintenance_kcal - 500)
+    muscle_gain_kcal = maintenance_kcal + 300
+
+    prompt = f"""
+    You are an expert nutritionist. Write a concise 2-sentence explanation in English for this user's exact Mifflin-St Jeor calculation:
+    - Stats: {age} yrs, {height_cm} cm, {latest_weight} kg, sex: {gender}, activity: {activity_level} (multiplier {mult})
+    - Exact BMR: {round(bmr)} kcal/day
+    - Weight Maintenance (TDEE): ~{maintenance_kcal} kcal/day
+    - Moderate Fat Loss (-500 kcal deficit): ~{weight_loss_kcal} kcal/day
+    - Lean Muscle Gain (+300 kcal surplus): ~{muscle_gain_kcal} kcal/day
+
+    State their BMR ({round(bmr)} kcal) and Maintenance TDEE (~{maintenance_kcal} kcal) clearly, and mention that a ~500 kcal deficit (~{weight_loss_kcal} kcal) supports steady fat loss of ~0.5 kg/week. Use ONLY these exact numbers.
     """
+
+    advice_text = (
+        f"Your estimated BMR is {round(bmr)} kcal/day, giving a Weight Maintenance TDEE of ~{maintenance_kcal} kcal/day. "
+        f"Aim for ~{weight_loss_kcal} kcal/day for steady fat loss (~0.5 kg/week) or ~{muscle_gain_kcal} kcal/day for lean muscle gain."
+    )
 
     try:
         response = client.models.generate_content(
@@ -712,21 +794,26 @@ def ai_calorie_recommendation():
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                response_schema=CalorieRecommendation,
-                temperature=0.2
+                response_schema=CalorieAdviceText,
+                temperature=0.1
             ),
         )
         rec = json.loads(response.text)
-        return jsonify({
-            'status': 'succes',
-            'maintenance_kcal': rec['maintenance_kcal'],
-            'weight_loss_kcal': rec['weight_loss_kcal'],
-            'muscle_gain_kcal': rec['muscle_gain_kcal'],
-            'advice': rec['advice']
-        })
+        if rec.get('advice'):
+            advice_text = rec['advice']
     except Exception as e:
         print(f"--> AI Calorie Recommendation Error: {e}")
-        return jsonify({'status': 'error', 'message': 'AI service is temporarily unavailable. Please try again.'}), 500
+
+    return jsonify({
+        'status': 'succes',
+        'maintenance_kcal': maintenance_kcal,
+        'weight_loss_kcal': weight_loss_kcal,
+        'muscle_gain_kcal': muscle_gain_kcal,
+        'macros_loss': compute_macro_targets(weight_loss_kcal, latest_weight),
+        'macros_maint': compute_macro_targets(maintenance_kcal, latest_weight),
+        'macros_gain': compute_macro_targets(muscle_gain_kcal, latest_weight),
+        'advice': advice_text
+    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -163,7 +163,7 @@
                 </div>
             </div>
 
-            <!-- Daily Summary Card -->
+            <!-- Daily Summary Card with Calorie + Individual Macro Progress Bars -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-5 text-center">
                 <h2 id="summary-heading" class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Today's Progress</h2>
                 <div class="text-4xl font-extrabold text-indigo-600 my-2">
@@ -173,23 +173,58 @@
                     <div id="progress-bar" class="bg-indigo-600 h-full transition-all duration-300" style="width: 0%"></div>
                 </div>
 
-                <!-- Macros Grid -->
-                <div class="grid grid-cols-4 gap-2 pt-3 border-t border-gray-100">
-                    <div class="bg-blue-50 p-2 rounded-xl">
-                        <p class="text-[11px] font-semibold text-blue-600 uppercase">Protein</p>
-                        <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-protein">0</span>g</p>
+                <!-- Macros Grid with Daily Targets & Live Progress Bars -->
+                <div class="grid grid-cols-2 gap-2.5 pt-3 border-t border-gray-100 text-left">
+                    <!-- Protein -->
+                    <div class="bg-blue-50/80 p-2.5 rounded-xl border border-blue-100/70">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-[11px] font-bold text-blue-700 uppercase">Protein</span>
+                            <span class="text-xs font-bold text-gray-800">
+                                <span id="total-protein">0</span><span class="text-[11px] font-normal text-gray-500"> / <span id="target-protein">{{ macro_targets.protein }}</span>g</span>
+                            </span>
+                        </div>
+                        <div class="w-full bg-blue-200/70 h-1.5 rounded-full overflow-hidden mt-1.5">
+                            <div id="bar-protein" class="bg-blue-600 h-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
                     </div>
-                    <div class="bg-amber-50 p-2 rounded-xl">
-                        <p class="text-[11px] font-semibold text-amber-600 uppercase">Carbs</p>
-                        <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-carbs">0</span>g</p>
+
+                    <!-- Carbs -->
+                    <div class="bg-amber-50/80 p-2.5 rounded-xl border border-amber-100/70">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-[11px] font-bold text-amber-700 uppercase">Carbs</span>
+                            <span class="text-xs font-bold text-gray-800">
+                                <span id="total-carbs">0</span><span class="text-[11px] font-normal text-gray-500"> / <span id="target-carbs">{{ macro_targets.carbs }}</span>g</span>
+                            </span>
+                        </div>
+                        <div class="w-full bg-amber-200/70 h-1.5 rounded-full overflow-hidden mt-1.5">
+                            <div id="bar-carbs" class="bg-amber-500 h-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
                     </div>
-                    <div class="bg-rose-50 p-2 rounded-xl">
-                        <p class="text-[11px] font-semibold text-rose-600 uppercase">Fat</p>
-                        <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-fat">0</span>g</p>
+
+                    <!-- Fat -->
+                    <div class="bg-rose-50/80 p-2.5 rounded-xl border border-rose-100/70">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-[11px] font-bold text-rose-700 uppercase">Fat</span>
+                            <span class="text-xs font-bold text-gray-800">
+                                <span id="total-fat">0</span><span class="text-[11px] font-normal text-gray-500"> / <span id="target-fat">{{ macro_targets.fat }}</span>g</span>
+                            </span>
+                        </div>
+                        <div class="w-full bg-rose-200/70 h-1.5 rounded-full overflow-hidden mt-1.5">
+                            <div id="bar-fat" class="bg-rose-500 h-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
                     </div>
-                    <div class="bg-emerald-50 p-2 rounded-xl">
-                        <p class="text-[11px] font-semibold text-emerald-600 uppercase">Fiber</p>
-                        <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-fiber">0</span>g</p>
+
+                    <!-- Fiber -->
+                    <div class="bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-100/70">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-[11px] font-bold text-emerald-700 uppercase">Fiber</span>
+                            <span class="text-xs font-bold text-gray-800">
+                                <span id="total-fiber">0</span><span class="text-[11px] font-normal text-gray-500"> / <span id="target-fiber">{{ macro_targets.fiber }}</span>g</span>
+                            </span>
+                        </div>
+                        <div class="w-full bg-emerald-200/70 h-1.5 rounded-full overflow-hidden mt-1.5">
+                            <div id="bar-fiber" class="bg-emerald-600 h-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -353,6 +388,29 @@
                             class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mt-1 font-bold text-indigo-600">
                     </div>
 
+                    <!-- Current Active Daily Macro Targets Summary -->
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <p class="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Active Daily Macro Targets</p>
+                        <div class="grid grid-cols-4 gap-1.5 text-center text-xs">
+                            <div class="bg-white py-1.5 rounded-lg border border-blue-100">
+                                <p class="text-[10px] font-semibold text-blue-600">Protein</p>
+                                <p class="font-bold text-gray-800"><span id="profile-macro-protein">{{ macro_targets.protein }}</span>g</p>
+                            </div>
+                            <div class="bg-white py-1.5 rounded-lg border border-amber-100">
+                                <p class="text-[10px] font-semibold text-amber-600">Carbs</p>
+                                <p class="font-bold text-gray-800"><span id="profile-macro-carbs">{{ macro_targets.carbs }}</span>g</p>
+                            </div>
+                            <div class="bg-white py-1.5 rounded-lg border border-rose-100">
+                                <p class="text-[10px] font-semibold text-rose-600">Fat</p>
+                                <p class="font-bold text-gray-800"><span id="profile-macro-fat">{{ macro_targets.fat }}</span>g</p>
+                            </div>
+                            <div class="bg-white py-1.5 rounded-lg border border-emerald-100">
+                                <p class="text-[10px] font-semibold text-emerald-600">Fiber</p>
+                                <p class="font-bold text-gray-800"><span id="profile-macro-fiber">{{ macro_targets.fiber }}</span>g</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="flex gap-2 pt-1">
                         <button type="submit" class="flex-1 bg-indigo-600 text-white font-semibold py-2.5 rounded-xl hover:bg-indigo-700 transition text-sm shadow-sm">
                             Save Profile
@@ -366,23 +424,26 @@
 
                 <!-- AI Calorie Recommendation Result Box -->
                 <div id="ai-rec-box" class="hidden mt-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl p-3.5 text-xs">
-                    <p class="font-bold text-indigo-800 mb-1">AI Daily Calorie Targets</p>
+                    <p class="font-bold text-indigo-800 mb-1">Daily Calorie & Macro Targets</p>
                     <p id="ai-rec-advice" class="text-gray-600 leading-relaxed mb-3"></p>
                     <div class="grid grid-cols-3 gap-1.5 text-center">
                         <button type="button" onclick="applyRecommendedGoal('loss')" class="bg-white hover:bg-emerald-50 border border-emerald-200 p-2 rounded-xl transition">
-                            <p class="text-[10px] font-semibold text-emerald-600 uppercase">Lose Weight</p>
-                            <p class="font-extrabold text-gray-800 mt-0.5"><span id="rec-loss-val">0</span> kcal</p>
+                            <p class="text-[10px] font-semibold text-emerald-600 leading-tight">Moderate Fat Loss</p>
+                            <p class="font-extrabold text-gray-800 mt-1">~<span id="rec-loss-val">0</span> kcal</p>
+                            <p id="rec-loss-macros" class="text-[9px] text-gray-400 mt-1"></p>
                         </button>
                         <button type="button" onclick="applyRecommendedGoal('maint')" class="bg-white hover:bg-indigo-50 border border-indigo-200 p-2 rounded-xl transition">
-                            <p class="text-[10px] font-semibold text-indigo-600 uppercase">Maintain</p>
-                            <p class="font-extrabold text-gray-800 mt-0.5"><span id="rec-maint-val">0</span> kcal</p>
+                            <p class="text-[10px] font-semibold text-indigo-600 leading-tight">Weight Maintenance</p>
+                            <p class="font-extrabold text-gray-800 mt-1">~<span id="rec-maint-val">0</span> kcal</p>
+                            <p id="rec-maint-macros" class="text-[9px] text-gray-400 mt-1"></p>
                         </button>
                         <button type="button" onclick="applyRecommendedGoal('gain')" class="bg-white hover:bg-amber-50 border border-amber-200 p-2 rounded-xl transition">
-                            <p class="text-[10px] font-semibold text-amber-600 uppercase">Gain Weight</p>
-                            <p class="font-extrabold text-gray-800 mt-0.5"><span id="rec-gain-val">0</span> kcal</p>
+                            <p class="text-[10px] font-semibold text-amber-600 leading-tight">Lean Muscle Gain</p>
+                            <p class="font-extrabold text-gray-800 mt-1">~<span id="rec-gain-val">0</span> kcal</p>
+                            <p id="rec-gain-macros" class="text-[9px] text-gray-400 mt-1"></p>
                         </button>
                     </div>
-                    <p class="text-[10px] text-gray-400 text-center mt-2">Tap any target above to fill it into your Daily Calorie Goal</p>
+                    <p class="text-[10px] text-gray-400 text-center mt-2">Tap any target above to apply calories & macros</p>
                 </div>
             </div>
 
@@ -423,11 +484,31 @@
 
         <script>
             let dailyGoal = {{ daily_goal }};
+            let macroTargets = {
+                protein: {{ macro_targets.protein }},
+                carbs: {{ macro_targets.carbs }},
+                fat: {{ macro_targets.fat }},
+                fiber: {{ macro_targets.fiber }}
+            };
             let searchTimeout = null;
             let selectedFood = null;
             let currentPreviewPortions = 1;
             let measureMode = 'serving';
             let lastAIRecommendation = null;
+
+            function applyMacroTargetsToUI(targets) {
+                if (!targets) return;
+                macroTargets = targets;
+                document.getElementById('target-protein').innerText = targets.protein;
+                document.getElementById('target-carbs').innerText = targets.carbs;
+                document.getElementById('target-fat').innerText = targets.fat;
+                document.getElementById('target-fiber').innerText = targets.fiber;
+
+                document.getElementById('profile-macro-protein').innerText = targets.protein;
+                document.getElementById('profile-macro-carbs').innerText = targets.carbs;
+                document.getElementById('profile-macro-fat').innerText = targets.fat;
+                document.getElementById('profile-macro-fiber').innerText = targets.fiber;
+            }
 
             // European Date Formatting Helpers (ISO YYYY-MM-DD <-> EU DD/MM/YYYY)
             function isoToEU(isoStr) {
@@ -511,6 +592,9 @@
                     document.getElementById('profile-goal-input').value = prof.daily_goal;
                     document.getElementById('goal-display-text').innerText = prof.daily_goal;
                 }
+                if (prof.macro_targets) {
+                    applyMacroTargetsToUI(prof.macro_targets);
+                }
                 if (prof.height_cm) {
                     document.getElementById('profile-height-input').value = prof.height_cm;
                     document.getElementById('profile-height-badge').innerText = prof.height_cm;
@@ -568,7 +652,10 @@
                 if (result.status === 'succes') {
                     dailyGoal = result.daily_goal;
                     document.getElementById('goal-display-text').innerText = dailyGoal;
-                    msgBox.innerText = 'Profile & daily calorie goal updated!';
+                    if (result.macro_targets) {
+                        applyMacroTargetsToUI(result.macro_targets);
+                    }
+                    msgBox.innerText = 'Profile, calorie goal & macro targets updated!';
                     msgBox.className = 'bg-emerald-50 text-emerald-700 text-xs p-2.5 rounded-xl mb-3 font-medium';
                     msgBox.classList.remove('hidden');
                     loadProfileDetails();
@@ -585,7 +672,6 @@
                 const recBox = document.getElementById('ai-rec-box');
                 msgBox.classList.add('hidden');
 
-                // Auto-save current form fields first if filled
                 const dobEU = document.getElementById('profile-dob-input').value.trim();
                 const dobISO = dobEU ? euToISO(dobEU) : '';
                 if (dobEU && (!dobISO || dobISO > todayStr)) {
@@ -623,6 +709,17 @@
                         document.getElementById('rec-loss-val').innerText = data.weight_loss_kcal;
                         document.getElementById('rec-maint-val').innerText = data.maintenance_kcal;
                         document.getElementById('rec-gain-val').innerText = data.muscle_gain_kcal;
+
+                        if (data.macros_loss) {
+                            document.getElementById('rec-loss-macros').innerText = `P:${data.macros_loss.protein}g C:${data.macros_loss.carbs}g F:${data.macros_loss.fat}g`;
+                        }
+                        if (data.macros_maint) {
+                            document.getElementById('rec-maint-macros').innerText = `P:${data.macros_maint.protein}g C:${data.macros_maint.carbs}g F:${data.macros_maint.fat}g`;
+                        }
+                        if (data.macros_gain) {
+                            document.getElementById('rec-gain-macros').innerText = `P:${data.macros_gain.protein}g C:${data.macros_gain.carbs}g F:${data.macros_gain.fat}g`;
+                        }
+
                         recBox.classList.remove('hidden');
                     } else {
                         msgBox.innerText = data.message;
@@ -641,9 +738,18 @@
             function applyRecommendedGoal(type) {
                 if (!lastAIRecommendation) return;
                 let chosen = lastAIRecommendation.maintenance_kcal;
-                if (type === 'loss') chosen = lastAIRecommendation.weight_loss_kcal;
-                if (type === 'gain') chosen = lastAIRecommendation.muscle_gain_kcal;
+                let chosenMacros = lastAIRecommendation.macros_maint;
+                if (type === 'loss') {
+                    chosen = lastAIRecommendation.weight_loss_kcal;
+                    chosenMacros = lastAIRecommendation.macros_loss;
+                } else if (type === 'gain') {
+                    chosen = lastAIRecommendation.muscle_gain_kcal;
+                    chosenMacros = lastAIRecommendation.macros_gain;
+                }
                 document.getElementById('profile-goal-input').value = chosen;
+                if (chosenMacros) {
+                    applyMacroTargetsToUI(chosenMacros);
+                }
             }
 
             // Weight Log Functions
@@ -714,6 +820,9 @@
                 const result = await res.json();
                 if (result.status === 'succes') {
                     document.getElementById('weight-kg-input').value = '';
+                    if (result.macro_targets) {
+                        applyMacroTargetsToUI(result.macro_targets);
+                    }
                     loadWeightHistory();
                 } else {
                     errBox.innerText = result.message || 'Could not save weight.';
@@ -722,7 +831,11 @@
             }
 
             async function deleteWeightEntry(id) {
-                await fetch(`/api/weight/${id}`, { method: 'DELETE' });
+                const res = await fetch(`/api/weight/${id}`, { method: 'DELETE' });
+                const result = await res.json();
+                if (result.macro_targets) {
+                    applyMacroTargetsToUI(result.macro_targets);
+                }
                 loadWeightHistory();
             }
 
@@ -1178,8 +1291,12 @@
                 document.getElementById('total-fat').innerText = totalF.toFixed(1);
                 document.getElementById('total-fiber').innerText = totalFib.toFixed(1);
 
-                let percentage = Math.min((totalKcal / dailyGoal) * 100, 100);
-                progressBar.style.width = `${percentage}%`;
+                // Update Calorie & Individual Macro Progress Bars
+                progressBar.style.width = `${Math.min((totalKcal / dailyGoal) * 100, 100)}%`;
+                document.getElementById('bar-protein').style.width = `${Math.min((totalP / (macroTargets.protein || 1)) * 100, 100)}%`;
+                document.getElementById('bar-carbs').style.width = `${Math.min((totalC / (macroTargets.carbs || 1)) * 100, 100)}%`;
+                document.getElementById('bar-fat').style.width = `${Math.min((totalF / (macroTargets.fat || 1)) * 100, 100)}%`;
+                document.getElementById('bar-fiber').style.width = `${Math.min((totalFib / (macroTargets.fiber || 1)) * 100, 100)}%`;
 
                 if (userItems.length === 0) {
                     listContainer.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">No food logged for this day.</p>';
