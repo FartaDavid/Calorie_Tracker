@@ -1,6 +1,6 @@
 import os
-import json
 import re
+import json
 import sqlite3
 from datetime import date, timedelta
 from dotenv import load_dotenv
@@ -50,6 +50,9 @@ def init_db():
             unit_fiber REAL NOT NULL DEFAULT 0,
             base_name TEXT NOT NULL DEFAULT '',
             base_portion TEXT NOT NULL DEFAULT '1 serving',
+            measure_mode TEXT NOT NULL DEFAULT 'serving',
+            custom_weight REAL NOT NULL DEFAULT 0,
+            weight_unit TEXT NOT NULL DEFAULT 'g',
             data TEXT NOT NULL
         )
     ''')
@@ -82,7 +85,10 @@ def init_db():
         'unit_carbs': 'REAL NOT NULL DEFAULT 0',
         'unit_fiber': 'REAL NOT NULL DEFAULT 0',
         'base_name': "TEXT NOT NULL DEFAULT ''",
-        'base_portion': "TEXT NOT NULL DEFAULT '1 serving'"
+        'base_portion': "TEXT NOT NULL DEFAULT '1 serving'",
+        'measure_mode': "TEXT NOT NULL DEFAULT 'serving'",
+        'custom_weight': 'REAL NOT NULL DEFAULT 0',
+        'weight_unit': "TEXT NOT NULL DEFAULT 'g'"
     }
     for col, col_type in new_meal_cols.items():
         if col not in meal_cols:
@@ -263,14 +269,14 @@ def search_aliment():
 
     return jsonify(final_results)
 
-# 5. Add meal with unit values stored
+# 5. Add meal for the selected date (defaults to today)
 @app.route('/api/add', methods=['POST'])
 def add_meal():
     if 'username' not in session:
         return jsonify({'status': 'unauthorized'}), 401
 
     data = request.json
-    today = str(date.today())
+    target_date = data.get('date') or str(date.today())
     current_user = session['username']
     
     conn = sqlite3.connect('calories.db')
@@ -280,8 +286,8 @@ def add_meal():
         '''INSERT INTO meals (
                user, aliment, calories, protein, fat, carbs, fiber,
                portions, unit_kcal, unit_protein, unit_fat, unit_carbs, unit_fiber,
-               base_name, base_portion, data
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+               base_name, base_portion, measure_mode, custom_weight, weight_unit, data
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
         (
             current_user,
             data['food'],
@@ -296,9 +302,12 @@ def add_meal():
             data.get('unit_fat', 0),
             data.get('unit_carbs', 0),
             data.get('unit_fiber', 0),
-            data.get('base_name', ''),
+            data.get('base_name', data['food']),
             data.get('base_portion', '1 serving'),
-            today
+            data.get('measure_mode', 'serving'),
+            data.get('custom_weight', 0),
+            data.get('weight_unit', 'g'),
+            target_date
         )
     )
     
@@ -322,38 +331,17 @@ def add_meal():
     conn.close()
     return jsonify({'status': 'succes'})
 
-# 6. Update servings in the daily log
-def format_scaled_portion(base_portion, portions):
-    portions_str = f"{portions:g}"
-    # Caută un număr urmat de g sau ml (ex: ~50g, 120g, 200ml)
-    match = re.search(r'(~?\s*)(\d+(?:\.\d+)?)\s*(g|ml)\b', base_portion, re.IGNORECASE)
-    if match:
-        prefix, num_str, unit = match.groups()
-        scaled_val = round(float(num_str) * portions)
-        scaled_portion = re.sub(
-            r'(~?\s*)(\d+(?:\.\d+)?)\s*(g|ml)\b',
-            f"{prefix}{scaled_val}{unit}",
-            base_portion,
-            count=1,
-            flags=re.IGNORECASE
-        )
-        return scaled_portion if portions == 1 else f"{portions_str}x {scaled_portion}"
-    return base_portion if portions == 1 else f"{portions_str}x {base_portion}"
-
+# 6. Update servings OR custom weight/volume in the daily log
 @app.route('/api/update_portions/<int:id_meal>', methods=['PATCH'])
 def update_portions(id_meal):
     if 'username' not in session:
         return jsonify({'status': 'unauthorized'}), 401
 
     data = request.json
-    new_portions = float(data.get('portions', 1))
-    if new_portions <= 0:
-        return jsonify({'status': 'error', 'message': 'Servings must be > 0'}), 400
-
     conn = sqlite3.connect('calories.db')
     c = conn.cursor()
     c.execute(
-        '''SELECT base_name, base_portion, unit_kcal, unit_protein, unit_fat, unit_carbs, unit_fiber 
+        '''SELECT base_name, base_portion, unit_kcal, unit_protein, unit_fat, unit_carbs, unit_fiber, measure_mode 
            FROM meals WHERE id = ? AND user = ?''',
         (id_meal, session['username'])
     )
@@ -362,60 +350,105 @@ def update_portions(id_meal):
         conn.close()
         return jsonify({'status': 'not_found'}), 404
 
-    base_name, base_portion, u_kcal, u_p, u_f, u_c, u_fib = row
-    
-    scaled_label = format_scaled_portion(base_portion, new_portions)
-    display_label = f"{base_name} ({scaled_label})"
+    base_name, base_portion, u_kcal, u_p, u_f, u_c, u_fib, measure_mode = row
 
-    new_kcal = round(u_kcal * new_portions)
-    new_p = round(u_p * new_portions, 1)
-    new_f = round(u_f * new_portions, 1)
-    new_c = round(u_c * new_portions, 1)
-    new_fib = round(u_fib * new_portions, 1)
+    if 'custom_weight' in data and measure_mode == 'weight':
+        new_weight = float(data.get('custom_weight', 0))
+        if new_weight <= 0:
+            conn.close()
+            return jsonify({'status': 'error', 'message': 'Weight must be > 0'}), 400
+        
+        match = re.search(r'(\d+(?:\.\d+)?)\s*(g|ml)\b', base_portion, re.IGNORECASE)
+        base_weight = float(match.group(1)) if match else 100.0
+        multiplier = new_weight / base_weight
 
-    c.execute(
-        '''UPDATE meals 
-           SET aliment = ?, calories = ?, protein = ?, fat = ?, carbs = ?, fiber = ?, portions = ?
-           WHERE id = ? AND user = ?''',
-        (display_label, new_kcal, new_p, new_f, new_c, new_fib, new_portions, id_meal, session['username'])
-    )
+        new_kcal = round(u_kcal * multiplier)
+        new_p = round(u_p * multiplier, 1)
+        new_f = round(u_f * multiplier, 1)
+        new_c = round(u_c * multiplier, 1)
+        new_fib = round(u_fib * multiplier, 1)
+
+        c.execute(
+            '''UPDATE meals 
+               SET aliment = ?, calories = ?, protein = ?, fat = ?, carbs = ?, fiber = ?, portions = ?, custom_weight = ?
+               WHERE id = ? AND user = ?''',
+            (base_name, new_kcal, new_p, new_f, new_c, new_fib, round(multiplier, 3), new_weight, id_meal, session['username'])
+        )
+    else:
+        new_portions = float(data.get('portions', 1))
+        if new_portions <= 0:
+            conn.close()
+            return jsonify({'status': 'error', 'message': 'Servings must be > 0'}), 400
+
+        new_kcal = round(u_kcal * new_portions)
+        new_p = round(u_p * new_portions, 1)
+        new_f = round(u_f * new_portions, 1)
+        new_c = round(u_c * new_portions, 1)
+        new_fib = round(u_fib * new_portions, 1)
+
+        c.execute(
+            '''UPDATE meals 
+               SET aliment = ?, calories = ?, protein = ?, fat = ?, carbs = ?, fiber = ?, portions = ?
+               WHERE id = ? AND user = ?''',
+            (base_name, new_kcal, new_p, new_f, new_c, new_fib, new_portions, id_meal, session['username'])
+        )
+
     conn.commit()
     conn.close()
     return jsonify({'status': 'updated'})
 
-# 7. Get meals for logged-in user
+# 7. Get meals for logged-in user and selected date
 @app.route('/api/meals')
 def get_meals():
     if 'username' not in session:
         return jsonify([]), 401
 
-    today = str(date.today())
+    target_date = request.args.get('date') or str(date.today())
     current_user = session['username']
     conn = sqlite3.connect('calories.db')
     c = conn.cursor()
     c.execute(
-        '''SELECT id, aliment, calories, protein, fat, carbs, fiber, portions, unit_kcal 
+        '''SELECT id, aliment, calories, protein, fat, carbs, fiber, portions, unit_kcal, 
+                  base_name, measure_mode, custom_weight, weight_unit 
            FROM meals WHERE user = ? AND data = ? ORDER BY id DESC''',
-        (current_user, today)
+        (current_user, target_date)
     )
     lines = c.fetchall()
     conn.close()
     
-    meals_list = [
-        {
+    meals_list = []
+    for l in lines:
+        clean_name = l[9] if l[9] else re.sub(r'\s*\(.*?\)\s*$', '', l[1]).strip()
+        meals_list.append({
             'id': l[0],
-            'name': l[1],
+            'name': clean_name,
             'calories': l[2],
             'protein': round(l[3], 1),
             'fat': round(l[4], 1),
             'carbs': round(l[5], 1),
             'fiber': round(l[6], 1),
             'portions': l[7],
-            'can_edit_portions': l[8] > 0
-        }
-        for l in lines
-    ]
+            'can_edit': l[8] > 0,
+            'measure_mode': l[10] or 'serving',
+            'custom_weight': int(l[11]) if l[11] == int(l[11]) else l[11],
+            'weight_unit': l[12] or 'g'
+        })
     return jsonify(meals_list)
+
+@app.route('/api/logged_dates')
+def get_logged_dates():
+    if 'username' not in session:
+        return jsonify([]), 401
+
+    conn = sqlite3.connect('calories.db')
+    c = conn.cursor()
+    c.execute(
+        'SELECT DISTINCT data FROM meals WHERE user = ?',
+        (session['username'],)
+    )
+    dates = [row[0] for row in c.fetchall()]
+    conn.close()
+    return jsonify(dates)
 
 # 8. Delete meal
 @app.route('/api/delete/<int:id_meal>', methods=['DELETE'])
