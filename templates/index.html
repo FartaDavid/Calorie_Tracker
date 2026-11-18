@@ -6,7 +6,7 @@
     <title>Calorie & Macro Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/icon.png">
     <link rel="icon" type="image/png" href="/static/icon.png">
     <meta name="apple-mobile-web-app-title" content="Calories">
@@ -102,184 +102,365 @@
         </script>
 
         {% else %}
-        <!-- MAIN DASHBOARD AFTER LOGIN -->
+        <!-- TOP HEADER WITH PROFILE SWITCHER -->
         <header class="flex justify-between items-center my-4">
             <div>
                 <h1 class="text-xl font-bold text-indigo-600">Calorie Tracker</h1>
                 <p class="text-xs text-gray-500">Hi, <span class="font-semibold text-gray-700 capitalize">{{ username }}</span>!</p>
             </div>
-            <a href="/logout" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-3 py-1.5 rounded-lg transition">
-                Log Out
-            </a>
+            <div class="flex items-center space-x-2">
+                <button type="button" id="nav-profile-btn" onclick="switchView('profile')"
+                    class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg transition border border-indigo-100">
+                    Profile
+                </button>
+                <button type="button" id="nav-tracker-btn" onclick="switchView('tracker')"
+                    class="hidden text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-1.5 rounded-lg transition shadow-xs">
+                    Tracker
+                </button>
+                <a href="/logout" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-3 py-1.5 rounded-lg transition">
+                    Log Out
+                </a>
+            </div>
         </header>
 
-       <!-- DATE NAVIGATION BAR (< Today 📅 > + Interactive Calendar Popover) -->
-        <div class="relative mb-4 select-none" id="date-nav-container">
-            <div class="bg-white px-3 py-2 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                <button type="button" onclick="changeDate(-1)" class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 font-bold text-base transition">
-                    ‹
-                </button>
+        <!-- ==================== VIEW 1: CALORIE & MACRO TRACKER ==================== -->
+        <div id="tracker-view">
+            <!-- DATE NAVIGATION BAR (DD/MM/YYYY European Format) -->
+            <div class="relative mb-4 select-none" id="date-nav-container">
+                <div class="bg-white px-3 py-2 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <button type="button" onclick="changeDate(-1)" class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 font-bold text-base transition">
+                        ‹
+                    </button>
 
-                <button type="button" onclick="toggleCalendar()" class="flex items-center space-x-1.5 text-sm font-bold text-gray-800 px-3 py-1.5 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition">
-                    <span id="date-display-label">Today</span>
-                </button>
+                    <button type="button" onclick="toggleCalendar()" class="flex items-center space-x-1.5 text-sm font-bold text-gray-800 px-3 py-1.5 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition">
+                        <span id="date-display-label">Today</span>
+                    </button>
 
-                <button type="button" id="next-day-btn" onclick="changeDate(1)" disabled
-                    class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 disabled:opacity-25 disabled:pointer-events-none font-bold text-base transition">
-                    ›
-                </button>
+                    <button type="button" id="next-day-btn" onclick="changeDate(1)" disabled
+                        class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 disabled:opacity-25 disabled:pointer-events-none font-bold text-base transition">
+                        ›
+                    </button>
+                </div>
+
+                <!-- Interactive Calendar Dropdown -->
+                <div id="calendar-popover" class="hidden absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-30">
+                    <div class="flex items-center justify-between mb-3">
+                        <button type="button" onclick="changeCalendarMonth(-1)" class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 font-bold">‹</button>
+                        <span id="calendar-month-title" class="text-sm font-bold text-gray-800"></span>
+                        <button type="button" id="cal-next-month-btn" onclick="changeCalendarMonth(1)" class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-25 font-bold">›</button>
+                    </div>
+
+                    <div class="grid grid-cols-7 text-center text-[10px] font-semibold text-gray-400 uppercase mb-1">
+                        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                    </div>
+
+                    <div id="calendar-days-grid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+
+                    <div class="mt-3 pt-2 border-t border-gray-100 flex justify-between items-center text-[11px] text-gray-400">
+                        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block"></span> Logged days</span>
+                        <button type="button" onclick="jumpToToday()" class="text-indigo-600 font-semibold hover:underline">Jump to Today</button>
+                    </div>
+                </div>
             </div>
 
-            <!-- Interactive Calendar Dropdown -->
-            <div id="calendar-popover" class="hidden absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-30">
-                <div class="flex items-center justify-between mb-3">
-                    <button type="button" onclick="changeCalendarMonth(-1)" class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 font-bold">‹</button>
-                    <span id="calendar-month-title" class="text-sm font-bold text-gray-800"></span>
-                    <button type="button" id="cal-next-month-btn" onclick="changeCalendarMonth(1)" class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-25 font-bold">›</button>
+            <!-- Daily Summary Card -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-5 text-center">
+                <h2 id="summary-heading" class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Today's Progress</h2>
+                <div class="text-4xl font-extrabold text-indigo-600 my-2">
+                    <span id="total-calories">0</span> <span class="text-lg text-gray-400 font-normal">/ <span id="goal-display-text">{{ daily_goal }}</span> kcal</span>
+                </div>
+                <div class="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden mt-3 mb-4">
+                    <div id="progress-bar" class="bg-indigo-600 h-full transition-all duration-300" style="width: 0%"></div>
                 </div>
 
-                <!-- Weekday headers -->
-                <div class="grid grid-cols-7 text-center text-[10px] font-semibold text-gray-400 uppercase mb-1">
-                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                <!-- Macros Grid -->
+                <div class="grid grid-cols-4 gap-2 pt-3 border-t border-gray-100">
+                    <div class="bg-blue-50 p-2 rounded-xl">
+                        <p class="text-[11px] font-semibold text-blue-600 uppercase">Protein</p>
+                        <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-protein">0</span>g</p>
+                    </div>
+                    <div class="bg-amber-50 p-2 rounded-xl">
+                        <p class="text-[11px] font-semibold text-amber-600 uppercase">Carbs</p>
+                        <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-carbs">0</span>g</p>
+                    </div>
+                    <div class="bg-rose-50 p-2 rounded-xl">
+                        <p class="text-[11px] font-semibold text-rose-600 uppercase">Fat</p>
+                        <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-fat">0</span>g</p>
+                    </div>
+                    <div class="bg-emerald-50 p-2 rounded-xl">
+                        <p class="text-[11px] font-semibold text-emerald-600 uppercase">Fiber</p>
+                        <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-fiber">0</span>g</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAT-STYLE FOOD INPUT & PREVIEW -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-5 relative">
+                <div class="relative flex items-center">
+                    <input type="text" id="food-name" placeholder="Type what you ate (e.g. milk, 2 eggs, banana)..." oninput="handleSearch()" autocomplete="off"
+                        class="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-sm transition">
+                    <span id="loading-spinner" class="hidden absolute right-3.5 text-xs text-indigo-600 font-semibold animate-pulse">AI...</span>
+                    <button id="clear-search-btn" onclick="resetSelection()" class="hidden absolute right-3.5 text-gray-400 hover:text-gray-600 text-sm font-bold">✕</button>
                 </div>
 
-                <!-- Days grid -->
-                <div id="calendar-days-grid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+                <!-- AI Suggestions Dropdown -->
+                <div id="suggestions-box" class="absolute left-4 right-4 bg-white border border-gray-200 rounded-2xl mt-2 shadow-xl max-h-64 overflow-y-auto hidden z-20 divide-y divide-gray-100"></div>
 
-                <div class="mt-3 pt-2 border-t border-gray-100 flex justify-between items-center text-[11px] text-gray-400">
-                    <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block"></span> Logged days</span>
-                    <button type="button" onclick="jumpToToday()" class="text-indigo-600 font-semibold hover:underline">Jump to Today</button>
+                <!-- Read-Only Nutrition Preview Card -->
+                <div id="preview-card" class="hidden mt-3 bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 transition-all">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p id="preview-name" class="font-bold text-gray-800 text-sm"></p>
+                            <p id="preview-portion-label" class="text-xs text-indigo-700 font-medium mt-0.5"></p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xl font-extrabold text-indigo-600"><span id="preview-kcal">0</span> <span class="text-xs font-normal">kcal</span></span>
+                        </div>
+                    </div>
+
+                    <!-- Read-Only Macro Badges -->
+                    <div class="grid grid-cols-4 gap-1.5 my-3 text-center">
+                        <div class="bg-white/90 py-1.5 px-1 rounded-xl border border-blue-100">
+                            <p class="text-[10px] font-semibold text-blue-600 uppercase">Protein</p>
+                            <p class="text-xs font-bold text-gray-800"><span id="preview-protein">0</span>g</p>
+                        </div>
+                        <div class="bg-white/90 py-1.5 px-1 rounded-xl border border-amber-100">
+                            <p class="text-[10px] font-semibold text-amber-600 uppercase">Carbs</p>
+                            <p class="text-xs font-bold text-gray-800"><span id="preview-carbs">0</span>g</p>
+                        </div>
+                        <div class="bg-white/90 py-1.5 px-1 rounded-xl border border-rose-100">
+                            <p class="text-[10px] font-semibold text-rose-600 uppercase">Fat</p>
+                            <p class="text-xs font-bold text-gray-800"><span id="preview-fat">0</span>g</p>
+                        </div>
+                        <div class="bg-white/90 py-1.5 px-1 rounded-xl border border-emerald-100">
+                            <p class="text-[10px] font-semibold text-emerald-600 uppercase">Fiber</p>
+                            <p class="text-xs font-bold text-gray-800"><span id="preview-fiber">0</span>g</p>
+                        </div>
+                    </div>
+
+                    <!-- Mode Switcher -->
+                    <div id="unit-mode-switch" class="hidden flex bg-white/80 p-1 rounded-xl border border-indigo-100 mb-3 text-xs">
+                        <button type="button" id="mode-serving-btn" onclick="setMeasureMode('serving')" 
+                            class="flex-1 py-1.5 rounded-lg font-semibold transition bg-indigo-600 text-white shadow-xs">
+                            By Serving
+                        </button>
+                        <button type="button" id="mode-weight-btn" onclick="setMeasureMode('weight')" 
+                            class="flex-1 py-1.5 rounded-lg font-semibold transition text-gray-600 hover:text-indigo-600">
+                            Custom (<span id="weight-unit-label">g</span>)
+                        </button>
+                    </div>
+
+                    <!-- Quantity Control + Add Button -->
+                    <div class="flex items-center justify-between gap-3 pt-1">
+                        <div id="serving-control" class="flex items-center bg-white border border-gray-200 rounded-xl px-2 py-1 shadow-xs select-none">
+                            <span class="text-xs text-gray-400 mr-2 pl-1">Servings:</span>
+                            <button type="button" onclick="stepPreviewServings(-1)" class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 font-bold text-base transition">−</button>
+                            <span id="preview-portions-display" class="w-9 text-center text-sm font-bold text-gray-800">1</span>
+                            <button type="button" onclick="stepPreviewServings(1)" class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 font-bold text-base transition">+</button>
+                        </div>
+
+                        <div id="weight-control" class="hidden flex items-center bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-xs">
+                            <input type="number" step="1" min="1" inputmode="numeric" id="custom-weight-input" value="100" oninput="updatePreviewTotals()"
+                                class="w-16 text-center text-sm font-bold text-gray-800 focus:outline-none">
+                            <span id="custom-weight-suffix" class="text-xs font-semibold text-gray-500 ml-1">g</span>
+                        </div>
+
+                        <button type="button" onclick="confirmAddFood()" class="flex-1 bg-indigo-600 text-white font-semibold py-2.5 px-4 rounded-xl hover:bg-indigo-700 transition text-sm shadow-sm">
+                            Add to Log
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consumed List -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 id="list-heading" class="font-bold text-gray-700 mb-3">Consumed Today</h3>
+                <div id="food-list" class="space-y-2.5 max-h-80 overflow-y-auto">
+                    <p class="text-gray-400 text-sm text-center py-4">No food logged for this day.</p>
                 </div>
             </div>
         </div>
 
-        <!-- Daily Summary Card -->
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-5 text-center">
-            <h2 id="summary-heading" class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Today's Progress</h2>
-            <div class="text-4xl font-extrabold text-indigo-600 my-2">
-                <span id="total-calories">0</span> <span class="text-lg text-gray-400 font-normal">/ {{ daily_goal }} kcal</span>
-            </div>
-            <div class="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden mt-3 mb-4">
-                <div id="progress-bar" class="bg-indigo-600 h-full transition-all duration-300" style="width: 0%"></div>
-            </div>
+        <!-- ==================== VIEW 2: USER PROFILE & WEIGHT LOG ==================== -->
+        <div id="profile-view" class="hidden space-y-5">
+            <!-- Profile Overview Card -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
+                <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 font-extrabold text-lg flex items-center justify-center mx-auto mb-2 uppercase">
+                    {{ username[0] }}
+                </div>
+                <h2 class="text-lg font-bold text-gray-800 capitalize">{{ username }}</h2>
+                <p id="profile-age-subtitle" class="text-xs text-gray-400 mt-0.5">Complete your profile details below</p>
 
-            <!-- Macros Grid -->
-            <div class="grid grid-cols-4 gap-2 pt-3 border-t border-gray-100">
-                <div class="bg-blue-50 p-2 rounded-xl">
-                    <p class="text-[11px] font-semibold text-blue-600 uppercase">Protein</p>
-                    <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-protein">0</span>g</p>
-                </div>
-                <div class="bg-amber-50 p-2 rounded-xl">
-                    <p class="text-[11px] font-semibold text-amber-600 uppercase">Carbs</p>
-                    <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-carbs">0</span>g</p>
-                </div>
-                <div class="bg-rose-50 p-2 rounded-xl">
-                    <p class="text-[11px] font-semibold text-rose-600 uppercase">Fat</p>
-                    <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-fat">0</span>g</p>
-                </div>
-                <div class="bg-emerald-50 p-2 rounded-xl">
-                    <p class="text-[11px] font-semibold text-emerald-600 uppercase">Fiber</p>
-                    <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-fiber">0</span>g</p>
+                <div class="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-gray-100">
+                    <div class="bg-indigo-50/70 p-2.5 rounded-xl">
+                        <p class="text-[10px] font-semibold text-indigo-600 uppercase">Weight</p>
+                        <p class="text-lg font-extrabold text-gray-800 mt-0.5"><span id="profile-current-weight">--</span> <span class="text-[11px] font-normal text-gray-500">kg</span></p>
+                    </div>
+                    <div class="bg-gray-50 p-2.5 rounded-xl">
+                        <p class="text-[10px] font-semibold text-gray-500 uppercase">Height</p>
+                        <p class="text-lg font-extrabold text-gray-800 mt-0.5"><span id="profile-height-badge">--</span> <span class="text-[11px] font-normal text-gray-500">cm</span></p>
+                    </div>
+                    <div class="bg-gray-50 p-2.5 rounded-xl">
+                        <p class="text-[10px] font-semibold text-gray-500 uppercase">Change</p>
+                        <p id="profile-weight-diff" class="text-lg font-extrabold text-gray-800 mt-0.5">--</p>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- CHAT-STYLE FOOD INPUT & PREVIEW -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-5 relative">
-            <div class="relative flex items-center">
-                <input type="text" id="food-name" placeholder="Type what you ate (e.g. milk, 2 eggs, banana)..." oninput="handleSearch()" autocomplete="off"
-                    class="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-sm transition">
-                <span id="loading-spinner" class="hidden absolute right-3.5 text-xs text-indigo-600 font-semibold animate-pulse">AI...</span>
-                <button id="clear-search-btn" onclick="resetSelection()" class="hidden absolute right-3.5 text-gray-400 hover:text-gray-600 text-sm font-bold">✕</button>
-            </div>
+            <!-- Personal Details & Calorie Goal Card -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-gray-700 mb-3">Personal Details & Goal</h3>
+                <div id="profile-msg" class="hidden text-xs p-2.5 rounded-xl mb-3 font-medium"></div>
 
-            <!-- AI Suggestions Dropdown -->
-            <div id="suggestions-box" class="absolute left-4 right-4 bg-white border border-gray-200 rounded-2xl mt-2 shadow-xl max-h-64 overflow-y-auto hidden z-20 divide-y divide-gray-100"></div>
+                <form onsubmit="saveProfileSettings(event)" class="space-y-3">
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="text-xs text-gray-500 ml-1">Height (cm)</label>
+                            <input type="number" step="0.5" min="80" max="250" inputmode="decimal" id="profile-height-input" placeholder="e.g. 178"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mt-1">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 ml-1">Date of Birth</label>
+                            <input type="text" id="profile-dob-input" placeholder="DD/MM/YYYY" maxlength="10" inputmode="numeric"
+                                oninput="autoFormatDateInput(this)"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mt-1">
+                        </div>
+                    </div>
 
-            <!-- Read-Only Nutrition Preview Card -->
-            <div id="preview-card" class="hidden mt-3 bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 transition-all">
-                <div class="flex justify-between items-start">
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="text-xs text-gray-500 ml-1">Biological Sex</label>
+                            <select id="profile-gender-input" class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mt-1 bg-white">
+                                <option value="unspecified">Not specified</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 ml-1">Activity Level</label>
+                            <select id="profile-activity-input" class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mt-1 bg-white">
+                                <option value="sedentary">Sedentary</option>
+                                <option value="light">Lightly active</option>
+                                <option value="moderate" selected>Moderately active</option>
+                                <option value="active">Very active</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div>
-                        <p id="preview-name" class="font-bold text-gray-800 text-sm"></p>
-                        <p id="preview-portion-label" class="text-xs text-indigo-700 font-medium mt-0.5"></p>
-                    </div>
-                    <div class="text-right">
-                        <span class="text-xl font-extrabold text-indigo-600"><span id="preview-kcal">0</span> <span class="text-xs font-normal">kcal</span></span>
-                    </div>
-                </div>
-
-                <!-- Read-Only Macro Badges -->
-                <div class="grid grid-cols-4 gap-1.5 my-3 text-center">
-                    <div class="bg-white/90 py-1.5 px-1 rounded-xl border border-blue-100">
-                        <p class="text-[10px] font-semibold text-blue-600 uppercase">Protein</p>
-                        <p class="text-xs font-bold text-gray-800"><span id="preview-protein">0</span>g</p>
-                    </div>
-                    <div class="bg-white/90 py-1.5 px-1 rounded-xl border border-amber-100">
-                        <p class="text-[10px] font-semibold text-amber-600 uppercase">Carbs</p>
-                        <p class="text-xs font-bold text-gray-800"><span id="preview-carbs">0</span>g</p>
-                    </div>
-                    <div class="bg-white/90 py-1.5 px-1 rounded-xl border border-rose-100">
-                        <p class="text-[10px] font-semibold text-rose-600 uppercase">Fat</p>
-                        <p class="text-xs font-bold text-gray-800"><span id="preview-fat">0</span>g</p>
-                    </div>
-                    <div class="bg-white/90 py-1.5 px-1 rounded-xl border border-emerald-100">
-                        <p class="text-[10px] font-semibold text-emerald-600 uppercase">Fiber</p>
-                        <p class="text-xs font-bold text-gray-800"><span id="preview-fiber">0</span>g</p>
-                    </div>
-                </div>
-
-                <!-- Mode Switcher: Serving vs Exact Weight/Volume (g / ml) -->
-                <div id="unit-mode-switch" class="hidden flex bg-white/80 p-1 rounded-xl border border-indigo-100 mb-3 text-xs">
-                    <button type="button" id="mode-serving-btn" onclick="setMeasureMode('serving')" 
-                        class="flex-1 py-1.5 rounded-lg font-semibold transition bg-indigo-600 text-white shadow-xs">
-                        By Serving
-                    </button>
-                    <button type="button" id="mode-weight-btn" onclick="setMeasureMode('weight')" 
-                        class="flex-1 py-1.5 rounded-lg font-semibold transition text-gray-600 hover:text-indigo-600">
-                        Custom (<span id="weight-unit-label">g</span>)
-                    </button>
-                </div>
-
-                <!-- Quantity Control + Add Button -->
-                <div class="flex items-center justify-between gap-3 pt-1">
-                    <!-- Option A: Serving Stepper (+ / -) -->
-                    <div id="serving-control" class="flex items-center bg-white border border-gray-200 rounded-xl px-2 py-1 shadow-xs select-none">
-                        <span class="text-xs text-gray-400 mr-2 pl-1">Servings:</span>
-                        <button type="button" onclick="stepPreviewServings(-1)" class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 font-bold text-base transition">−</button>
-                        <span id="preview-portions-display" class="w-9 text-center text-sm font-bold text-gray-800">1</span>
-                        <button type="button" onclick="stepPreviewServings(1)" class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 font-bold text-base transition">+</button>
+                        <label class="text-xs text-gray-500 ml-1">Daily Calorie Goal (kcal)</label>
+                        <input type="number" step="10" min="800" max="8000" inputmode="numeric" id="profile-goal-input" value="{{ daily_goal }}" required
+                            class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mt-1 font-bold text-indigo-600">
                     </div>
 
-                    <!-- Option B: Custom Weight/Volume Input (g or ml) -->
-                    <div id="weight-control" class="hidden flex items-center bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-xs">
-                        <input type="number" step="1" min="1" inputmode="numeric" id="custom-weight-input" value="100" oninput="updatePreviewTotals()"
-                            class="w-16 text-center text-sm font-bold text-gray-800 focus:outline-none">
-                        <span id="custom-weight-suffix" class="text-xs font-semibold text-gray-500 ml-1">g</span>
+                    <div class="flex gap-2 pt-1">
+                        <button type="submit" class="flex-1 bg-indigo-600 text-white font-semibold py-2.5 rounded-xl hover:bg-indigo-700 transition text-sm shadow-sm">
+                            Save Profile
+                        </button>
+                        <button type="button" id="ai-rec-btn" onclick="getAICalorieRecommendation()"
+                            class="flex-1 bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold py-2.5 px-3 rounded-xl hover:bg-indigo-100 transition text-xs">
+                            ✨ AI Calorie Advice
+                        </button>
                     </div>
+                </form>
 
-                    <button type="button" onclick="confirmAddFood()" class="flex-1 bg-indigo-600 text-white font-semibold py-2.5 px-4 rounded-xl hover:bg-indigo-700 transition text-sm shadow-sm">
-                        Add to Log
-                    </button>
+                <!-- AI Calorie Recommendation Result Box -->
+                <div id="ai-rec-box" class="hidden mt-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl p-3.5 text-xs">
+                    <p class="font-bold text-indigo-800 mb-1">AI Daily Calorie Targets</p>
+                    <p id="ai-rec-advice" class="text-gray-600 leading-relaxed mb-3"></p>
+                    <div class="grid grid-cols-3 gap-1.5 text-center">
+                        <button type="button" onclick="applyRecommendedGoal('loss')" class="bg-white hover:bg-emerald-50 border border-emerald-200 p-2 rounded-xl transition">
+                            <p class="text-[10px] font-semibold text-emerald-600 uppercase">Lose Weight</p>
+                            <p class="font-extrabold text-gray-800 mt-0.5"><span id="rec-loss-val">0</span> kcal</p>
+                        </button>
+                        <button type="button" onclick="applyRecommendedGoal('maint')" class="bg-white hover:bg-indigo-50 border border-indigo-200 p-2 rounded-xl transition">
+                            <p class="text-[10px] font-semibold text-indigo-600 uppercase">Maintain</p>
+                            <p class="font-extrabold text-gray-800 mt-0.5"><span id="rec-maint-val">0</span> kcal</p>
+                        </button>
+                        <button type="button" onclick="applyRecommendedGoal('gain')" class="bg-white hover:bg-amber-50 border border-amber-200 p-2 rounded-xl transition">
+                            <p class="text-[10px] font-semibold text-amber-600 uppercase">Gain Weight</p>
+                            <p class="font-extrabold text-gray-800 mt-0.5"><span id="rec-gain-val">0</span> kcal</p>
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-gray-400 text-center mt-2">Tap any target above to fill it into your Daily Calorie Goal</p>
                 </div>
             </div>
-        </div>
 
-        <!-- Consumed List -->
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-            <h3 id="list-heading" class="font-bold text-gray-700 mb-3">Consumed Today</h3>
-            <div id="food-list" class="space-y-2.5 max-h-80 overflow-y-auto">
-                <p class="text-gray-400 text-sm text-center py-4">No food logged for this day.</p>
+            <!-- Log Weight Form (European DD/MM/YYYY) -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-gray-700 mb-3">Log Body Weight</h3>
+                <div id="weight-error" class="hidden bg-red-50 text-red-600 text-xs p-2.5 rounded-xl mb-3 font-medium"></div>
+
+                <form onsubmit="saveWeightLog(event)" class="space-y-3">
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="text-xs text-gray-500 ml-1">Date (DD/MM/YYYY)</label>
+                            <input type="text" id="weight-date-input" placeholder="DD/MM/YYYY" maxlength="10" inputmode="numeric" required
+                                oninput="autoFormatDateInput(this)"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mt-1 bg-gray-50">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 ml-1">Weight (kg)</label>
+                            <input type="number" step="0.1" min="20" max="400" inputmode="decimal" id="weight-kg-input" placeholder="e.g. 74.5" required
+                                class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mt-1">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-2.5 rounded-xl hover:bg-indigo-700 transition text-sm shadow-sm">
+                        Save Weight
+                    </button>
+                </form>
+            </div>
+
+            <!-- Weight History List -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-gray-700 mb-3">Weight History</h3>
+                <div id="weight-history-list" class="space-y-2 max-h-72 overflow-y-auto">
+                    <p class="text-gray-400 text-sm text-center py-4">No weight entries yet.</p>
+                </div>
             </div>
         </div>
 
         <script>
-            const dailyGoal = {{ daily_goal }};
+            let dailyGoal = {{ daily_goal }};
             let searchTimeout = null;
             let selectedFood = null;
             let currentPreviewPortions = 1;
             let measureMode = 'serving';
+            let lastAIRecommendation = null;
 
-            // Date management & Custom Interactive Calendar
+            // European Date Formatting Helpers (ISO YYYY-MM-DD <-> EU DD/MM/YYYY)
+            function isoToEU(isoStr) {
+                if (!isoStr || !isoStr.includes('-')) return isoStr || '';
+                const [y, m, d] = isoStr.split('-');
+                return `${d}/${m}/${y}`;
+            }
+
+            function euToISO(euStr) {
+                if (!euStr) return null;
+                const match = euStr.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                if (!match) return null;
+                const day = match[1].padStart(2, '0');
+                const month = match[2].padStart(2, '0');
+                const year = match[3];
+                const dObj = new Date(Number(year), Number(month) - 1, Number(day));
+                if (dObj.getFullYear() !== Number(year) || dObj.getMonth() !== Number(month) - 1 || dObj.getDate() !== Number(day)) {
+                    return null;
+                }
+                return `${year}-${month}-${day}`;
+            }
+
+            function autoFormatDateInput(inputEl) {
+                let digits = inputEl.value.replace(/\D/g, '').slice(0, 8);
+                if (digits.length >= 5) {
+                    inputEl.value = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+                } else if (digits.length >= 3) {
+                    inputEl.value = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+                } else {
+                    inputEl.value = digits;
+                }
+            }
+
             function getLocalISODate(offsetDays = 0) {
                 const d = new Date();
                 d.setDate(d.getDate() + offsetDays);
@@ -292,9 +473,260 @@
             const todayStr = getLocalISODate(0);
             let selectedDate = todayStr;
             let calendarViewYear = new Date().getFullYear();
-            let calendarViewMonth = new Date().getMonth(); // 0-11
+            let calendarViewMonth = new Date().getMonth();
             let loggedDatesSet = new Set();
 
+            // Switch between Tracker view and Profile view
+            function switchView(viewName) {
+                const trackerView = document.getElementById('tracker-view');
+                const profileView = document.getElementById('profile-view');
+                const profileBtn = document.getElementById('nav-profile-btn');
+                const trackerBtn = document.getElementById('nav-tracker-btn');
+
+                if (viewName === 'profile') {
+                    trackerView.classList.add('hidden');
+                    profileView.classList.remove('hidden');
+                    profileBtn.classList.add('hidden');
+                    trackerBtn.classList.remove('hidden');
+
+                    document.getElementById('weight-date-input').value = isoToEU(selectedDate);
+                    loadProfileDetails();
+                    loadWeightHistory();
+                } else {
+                    profileView.classList.add('hidden');
+                    trackerView.classList.remove('hidden');
+                    trackerBtn.classList.add('hidden');
+                    profileBtn.classList.remove('hidden');
+                    loadMeals();
+                }
+            }
+
+            // Profile Details & AI Recommendation Functions
+            async function loadProfileDetails() {
+                const res = await fetch('/api/profile');
+                const prof = await res.json();
+
+                if (prof.daily_goal) {
+                    dailyGoal = prof.daily_goal;
+                    document.getElementById('profile-goal-input').value = prof.daily_goal;
+                    document.getElementById('goal-display-text').innerText = prof.daily_goal;
+                }
+                if (prof.height_cm) {
+                    document.getElementById('profile-height-input').value = prof.height_cm;
+                    document.getElementById('profile-height-badge').innerText = prof.height_cm;
+                } else {
+                    document.getElementById('profile-height-badge').innerText = '--';
+                }
+                if (prof.birth_date) {
+                    document.getElementById('profile-dob-input').value = isoToEU(prof.birth_date);
+                }
+                if (prof.age !== null && prof.age !== undefined) {
+                    document.getElementById('profile-age-subtitle').innerText = `${prof.age} years old • Born ${isoToEU(prof.birth_date)}`;
+                } else {
+                    document.getElementById('profile-age-subtitle').innerText = 'Complete your profile details below';
+                }
+                if (prof.gender) {
+                    document.getElementById('profile-gender-input').value = prof.gender;
+                }
+                if (prof.activity_level) {
+                    document.getElementById('profile-activity-input').value = prof.activity_level;
+                }
+            }
+
+            async function saveProfileSettings(event) {
+                event.preventDefault();
+                const msgBox = document.getElementById('profile-msg');
+                msgBox.classList.add('hidden');
+
+                const dobEU = document.getElementById('profile-dob-input').value.trim();
+                let dobISO = '';
+                if (dobEU) {
+                    dobISO = euToISO(dobEU);
+                    if (!dobISO || dobISO > todayStr) {
+                        msgBox.innerText = 'Please enter a valid birth date in DD/MM/YYYY format.';
+                        msgBox.className = 'bg-red-50 text-red-600 text-xs p-2.5 rounded-xl mb-3 font-medium';
+                        msgBox.classList.remove('hidden');
+                        return;
+                    }
+                }
+
+                const payload = {
+                    height_cm: document.getElementById('profile-height-input').value,
+                    birth_date: dobISO,
+                    gender: document.getElementById('profile-gender-input').value,
+                    activity_level: document.getElementById('profile-activity-input').value,
+                    daily_goal: parseInt(document.getElementById('profile-goal-input').value)
+                };
+
+                const res = await fetch('/api/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+
+                if (result.status === 'succes') {
+                    dailyGoal = result.daily_goal;
+                    document.getElementById('goal-display-text').innerText = dailyGoal;
+                    msgBox.innerText = 'Profile & daily calorie goal updated!';
+                    msgBox.className = 'bg-emerald-50 text-emerald-700 text-xs p-2.5 rounded-xl mb-3 font-medium';
+                    msgBox.classList.remove('hidden');
+                    loadProfileDetails();
+                } else {
+                    msgBox.innerText = result.message || 'Could not save profile.';
+                    msgBox.className = 'bg-red-50 text-red-600 text-xs p-2.5 rounded-xl mb-3 font-medium';
+                    msgBox.classList.remove('hidden');
+                }
+            }
+
+            async function getAICalorieRecommendation() {
+                const btn = document.getElementById('ai-rec-btn');
+                const msgBox = document.getElementById('profile-msg');
+                const recBox = document.getElementById('ai-rec-box');
+                msgBox.classList.add('hidden');
+
+                // Auto-save current form fields first if filled
+                const dobEU = document.getElementById('profile-dob-input').value.trim();
+                const dobISO = dobEU ? euToISO(dobEU) : '';
+                if (dobEU && (!dobISO || dobISO > todayStr)) {
+                    msgBox.innerText = 'Please enter a valid birth date (DD/MM/YYYY) first.';
+                    msgBox.className = 'bg-red-50 text-red-600 text-xs p-2.5 rounded-xl mb-3 font-medium';
+                    msgBox.classList.remove('hidden');
+                    return;
+                }
+
+                await fetch('/api/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        height_cm: document.getElementById('profile-height-input').value,
+                        birth_date: dobISO || '',
+                        gender: document.getElementById('profile-gender-input').value,
+                        activity_level: document.getElementById('profile-activity-input').value,
+                        daily_goal: parseInt(document.getElementById('profile-goal-input').value) || dailyGoal
+                    })
+                });
+                await loadProfileDetails();
+
+                btn.disabled = true;
+                btn.innerText = 'Calculating...';
+
+                try {
+                    const res = await fetch('/api/ai_calorie_recommendation', { method: 'POST' });
+                    const data = await res.json();
+                    btn.disabled = false;
+                    btn.innerText = '✨ AI Calorie Advice';
+
+                    if (data.status === 'succes') {
+                        lastAIRecommendation = data;
+                        document.getElementById('ai-rec-advice').innerText = data.advice;
+                        document.getElementById('rec-loss-val').innerText = data.weight_loss_kcal;
+                        document.getElementById('rec-maint-val').innerText = data.maintenance_kcal;
+                        document.getElementById('rec-gain-val').innerText = data.muscle_gain_kcal;
+                        recBox.classList.remove('hidden');
+                    } else {
+                        msgBox.innerText = data.message;
+                        msgBox.className = 'bg-amber-50 text-amber-800 text-xs p-2.5 rounded-xl mb-3 font-medium';
+                        msgBox.classList.remove('hidden');
+                    }
+                } catch (e) {
+                    btn.disabled = false;
+                    btn.innerText = '✨ AI Calorie Advice';
+                    msgBox.innerText = 'Error connecting to AI.';
+                    msgBox.className = 'bg-red-50 text-red-600 text-xs p-2.5 rounded-xl mb-3 font-medium';
+                    msgBox.classList.remove('hidden');
+                }
+            }
+
+            function applyRecommendedGoal(type) {
+                if (!lastAIRecommendation) return;
+                let chosen = lastAIRecommendation.maintenance_kcal;
+                if (type === 'loss') chosen = lastAIRecommendation.weight_loss_kcal;
+                if (type === 'gain') chosen = lastAIRecommendation.muscle_gain_kcal;
+                document.getElementById('profile-goal-input').value = chosen;
+            }
+
+            // Weight Log Functions
+            async function loadWeightHistory() {
+                const res = await fetch('/api/weight');
+                const entries = await res.json();
+
+                const listEl = document.getElementById('weight-history-list');
+                const currentEl = document.getElementById('profile-current-weight');
+                const diffEl = document.getElementById('profile-weight-diff');
+
+                if (entries.length === 0) {
+                    currentEl.innerText = '--';
+                    diffEl.innerText = '--';
+                    diffEl.className = 'text-lg font-extrabold text-gray-800 mt-0.5';
+                    listEl.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">No weight entries yet.</p>';
+                    return;
+                }
+
+                const latest = entries[0].weight_kg;
+                const oldest = entries[entries.length - 1].weight_kg;
+                currentEl.innerText = latest.toFixed(1);
+
+                if (entries.length > 1) {
+                    const diff = +(latest - oldest).toFixed(1);
+                    const sign = diff > 0 ? '+' : '';
+                    diffEl.innerText = `${sign}${diff}`;
+                    diffEl.className = `text-lg font-extrabold mt-0.5 ${diff < 0 ? 'text-emerald-600' : (diff > 0 ? 'text-amber-600' : 'text-gray-800')}`;
+                } else {
+                    diffEl.innerText = '0.0';
+                    diffEl.className = 'text-lg font-extrabold text-gray-800 mt-0.5';
+                }
+
+                listEl.innerHTML = entries.map(item => {
+                    const formattedDate = item.date === todayStr ? 'Today' : isoToEU(item.date);
+
+                    return `
+                    <div class="flex justify-between items-center bg-gray-50 px-3.5 py-2.5 rounded-xl border border-gray-100">
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">${item.weight_kg.toFixed(1)} kg</p>
+                            <p class="text-xs text-gray-400">${formattedDate}</p>
+                        </div>
+                        <button onclick="deleteWeightEntry(${item.id})" class="text-red-400 hover:text-red-600 text-xs font-bold px-2 py-1">✕</button>
+                    </div>`;
+                }).join('');
+            }
+
+            async function saveWeightLog(event) {
+                event.preventDefault();
+                const dateEU = document.getElementById('weight-date-input').value;
+                const dateISO = euToISO(dateEU);
+                const weightVal = parseFloat(document.getElementById('weight-kg-input').value);
+                const errBox = document.getElementById('weight-error');
+                errBox.classList.add('hidden');
+
+                if (!dateISO || dateISO > todayStr) {
+                    errBox.innerText = 'Please enter a valid date in DD/MM/YYYY format (not in the future).';
+                    errBox.classList.remove('hidden');
+                    return;
+                }
+
+                const res = await fetch('/api/weight', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date: dateISO, weight_kg: weightVal })
+                });
+
+                const result = await res.json();
+                if (result.status === 'succes') {
+                    document.getElementById('weight-kg-input').value = '';
+                    loadWeightHistory();
+                } else {
+                    errBox.innerText = result.message || 'Could not save weight.';
+                    errBox.classList.remove('hidden');
+                }
+            }
+
+            async function deleteWeightEntry(id) {
+                await fetch(`/api/weight/${id}`, { method: 'DELETE' });
+                loadWeightHistory();
+            }
+
+            // Custom Interactive Calendar (DD/MM/YYYY European Display)
             async function fetchLoggedDates() {
                 try {
                     const res = await fetch('/api/logged_dates');
@@ -327,11 +759,10 @@
                     summaryHeading.innerText = "Yesterday's Progress";
                     listHeading.innerText = 'Consumed Yesterday';
                 } else {
-                    const dateObj = new Date(y, m - 1, d);
-                    const formatted = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                    labelEl.innerText = formatted;
-                    summaryHeading.innerText = `${formatted} Progress`;
-                    listHeading.innerText = `Consumed on ${formatted}`;
+                    const euFormatted = isoToEU(selectedDate);
+                    labelEl.innerText = euFormatted;
+                    summaryHeading.innerText = `${euFormatted} Progress`;
+                    listHeading.innerText = `Consumed on ${euFormatted}`;
                 }
             }
 
@@ -369,9 +800,8 @@
                 nextMonthBtn.disabled = isCurrentOrFutureMonth;
 
                 const monthDate = new Date(calendarViewYear, calendarViewMonth, 1);
-                titleEl.innerText = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                titleEl.innerText = monthDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 
-                // Monday = 0 ... Sunday = 6
                 let firstDayWeekday = monthDate.getDay() - 1;
                 if (firstDayWeekday < 0) firstDayWeekday = 6;
 
@@ -446,20 +876,12 @@
                 loadMeals();
             }
 
-            // Close calendar when clicking outside
             document.addEventListener('click', function(e) {
                 const dateNav = document.getElementById('date-nav-container');
                 if (dateNav && !dateNav.contains(e.target)) {
                     document.getElementById('calendar-popover').classList.add('hidden');
                 }
             });
-
-            function onDatePicked(newDateStr) {
-                if (!newDateStr || newDateStr > todayStr) return;
-                selectedDate = newDateStr;
-                updateDateUI();
-                loadMeals();
-            }
 
             function extractWeightInfo(portionStr) {
                 const regex = /(~?\s*)(\d+(?:\.\d+)?)\s*(g|ml)\b/i;
