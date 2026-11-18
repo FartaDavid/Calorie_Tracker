@@ -1,55 +1,53 @@
 <!DOCTYPE html>
-<html lang="ro">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tracker Calorii</title>
+    <title>Calorie & Macro Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans pb-10">
+<body class="bg-gray-50 text-gray-800 font-sans pb-12">
 
     <div class="max-w-md mx-auto p-4">
 
         {% if not logged_in %}
-        <!-- ECRAN DE LOGIN / ÎNREGISTRARE -->
+        <!-- LOGIN / REGISTER SCREEN -->
         <header class="text-center my-8">
-            <h1 class="text-3xl font-bold text-indigo-600">🍎 Calorii Tracker</h1>
-            <p class="text-sm text-gray-500 mt-1">Conectează-te pentru jurnalul tău personal</p>
+            <h1 class="text-3xl font-bold text-indigo-600">Calorie Tracker</h1>
+            <p class="text-sm text-gray-500 mt-1">Sign in to access your personal nutrition log</p>
         </header>
 
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <!-- Tab-uri Login / Cont Nou -->
             <div class="flex bg-gray-100 p-1 rounded-xl mb-5">
-                <button id="tab-login" onclick="toggleAuthMode('login')" class="flex-1 py-2 font-semibold rounded-lg text-sm transition bg-white shadow text-indigo-600">Intră în cont</button>
-                <button id="tab-register" onclick="toggleAuthMode('register')" class="flex-1 py-2 font-semibold rounded-lg text-sm transition text-gray-600">Cont nou</button>
+                <button id="tab-login" onclick="toggleAuthMode('login')" class="flex-1 py-2 font-semibold rounded-lg text-sm transition bg-white shadow text-indigo-600">Sign In</button>
+                <button id="tab-register" onclick="toggleAuthMode('register')" class="flex-1 py-2 font-semibold rounded-lg text-sm transition text-gray-600">Sign Up</button>
             </div>
 
             <div id="auth-error" class="hidden bg-red-50 text-red-600 text-xs p-3 rounded-xl mb-4 font-medium"></div>
 
             <form id="auth-form" onsubmit="submitAuth(event)" class="space-y-4">
                 <div>
-                    <label class="text-xs font-medium text-gray-600 ml-1">Nume utilizator (username)</label>
-                    <input type="text" id="auth-username" placeholder="ex: alex" required autocomplete="username"
+                    <label class="text-xs font-medium text-gray-600 ml-1">Username</label>
+                    <input type="text" id="auth-username" placeholder="e.g. alex" required autocomplete="username"
                         class="w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mt-1">
                 </div>
 
                 <div>
-                    <label class="text-xs font-medium text-gray-600 ml-1">Parolă</label>
+                    <label class="text-xs font-medium text-gray-600 ml-1">Password</label>
                     <input type="password" id="auth-password" placeholder="••••••" required autocomplete="current-password"
                         class="w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mt-1">
                 </div>
 
-                <!-- Câmp vizibil doar la creare cont -->
                 <div id="goal-field" class="hidden">
-                    <label class="text-xs font-medium text-gray-600 ml-1">Obiectiv zilnic (kcal)</label>
+                    <label class="text-xs font-medium text-gray-600 ml-1">Daily Calorie Goal (kcal)</label>
                     <input type="number" id="auth-goal" value="2000" min="800" max="6000"
                         class="w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mt-1">
                 </div>
 
                 <button type="submit" id="auth-submit-btn" class="w-full bg-indigo-600 text-white font-semibold py-2.5 rounded-xl hover:bg-indigo-700 transition text-sm shadow-md">
-                    Autentificare
+                    Sign In
                 </button>
             </form>
         </div>
@@ -66,12 +64,12 @@
                     document.getElementById('tab-login').className = 'flex-1 py-2 font-semibold rounded-lg text-sm transition bg-white shadow text-indigo-600';
                     document.getElementById('tab-register').className = 'flex-1 py-2 font-semibold rounded-lg text-sm transition text-gray-600';
                     document.getElementById('goal-field').classList.add('hidden');
-                    document.getElementById('auth-submit-btn').innerText = 'Autentificare';
+                    document.getElementById('auth-submit-btn').innerText = 'Sign In';
                 } else {
                     document.getElementById('tab-register').className = 'flex-1 py-2 font-semibold rounded-lg text-sm transition bg-white shadow text-indigo-600';
                     document.getElementById('tab-login').className = 'flex-1 py-2 font-semibold rounded-lg text-sm transition text-gray-600';
                     document.getElementById('goal-field').classList.remove('hidden');
-                    document.getElementById('auth-submit-btn').innerText = 'Creează cont';
+                    document.getElementById('auth-submit-btn').innerText = 'Create Account';
                 }
             }
 
@@ -94,86 +92,197 @@
                 if (result.status === 'succes') {
                     window.location.reload();
                 } else {
-                    errorBox.innerText = result.message || 'Eroare la autentificare.';
+                    errorBox.innerText = result.message || 'Authentication failed.';
                     errorBox.classList.remove('hidden');
                 }
             }
         </script>
 
         {% else %}
-        <!-- ECRANUL PRINCIPAL DUPĂ LOGARE -->
+        <!-- MAIN DASHBOARD AFTER LOGIN -->
         <header class="flex justify-between items-center my-5">
             <div>
-                <h1 class="text-xl font-bold text-indigo-600">🍎 Calorii Tracker</h1>
-                <p class="text-xs text-gray-500">Salut, <span class="font-semibold text-gray-700 capitalize">{{ username }}</span>!</p>
+                <h1 class="text-xl font-bold text-indigo-600">Calorie Tracker</h1>
+                <p class="text-xs text-gray-500">Hi, <span class="font-semibold text-gray-700 capitalize">{{ username }}</span>!</p>
             </div>
             <a href="/logout" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-3 py-1.5 rounded-lg transition">
-                Ieșire
+                Log Out
             </a>
         </header>
 
-        <!-- Card Rezumat Zilnic -->
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6 text-center">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Progresul tău azi</h2>
-            <div class="text-4xl font-extrabold text-indigo-600 my-2"><span id="total-calories">0</span> <span class="text-lg text-gray-400 font-normal">/ {{ daily_goal }} kcal</span></div>
-            <div class="w-full bg-gray-200 h-3 rounded-full overflow-hidden mt-4">
+        <!-- Daily Summary Card -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-5 text-center">
+            <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Today's Progress</h2>
+            <div class="text-4xl font-extrabold text-indigo-600 my-2">
+                <span id="total-calories">0</span> <span class="text-lg text-gray-400 font-normal">/ {{ daily_goal }} kcal</span>
+            </div>
+            <div class="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden mt-3 mb-4">
                 <div id="progress-bar" class="bg-indigo-600 h-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+
+            <!-- Macros Grid -->
+            <div class="grid grid-cols-4 gap-2 pt-3 border-t border-gray-100">
+                <div class="bg-blue-50 p-2 rounded-xl">
+                    <p class="text-[11px] font-semibold text-blue-600 uppercase">Protein</p>
+                    <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-protein">0</span>g</p>
+                </div>
+                <div class="bg-amber-50 p-2 rounded-xl">
+                    <p class="text-[11px] font-semibold text-amber-600 uppercase">Carbs</p>
+                    <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-carbs">0</span>g</p>
+                </div>
+                <div class="bg-rose-50 p-2 rounded-xl">
+                    <p class="text-[11px] font-semibold text-rose-600 uppercase">Fat</p>
+                    <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-fat">0</span>g</p>
+                </div>
+                <div class="bg-emerald-50 p-2 rounded-xl">
+                    <p class="text-[11px] font-semibold text-emerald-600 uppercase">Fiber</p>
+                    <p class="text-sm font-bold text-gray-800 mt-0.5"><span id="total-fiber">0</span>g</p>
+                </div>
             </div>
         </div>
 
-        <!-- Formular Adăugare -->
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6 relative">
-            <h3 class="font-bold text-gray-700 mb-3">Ce ai mâncat?</h3>
-            <form id="calorie-form" onsubmit="addFood(event)" class="space-y-3">
-                <div class="relative">
-                    <input type="text" id="food-name" placeholder="Ex: o banană, 2 ouă ochiuri, iaurt zuzu..." oninput="handleSearch()" required autocomplete="off"
-                        class="w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
-                    <span id="loading-spinner" class="hidden absolute right-3 top-3 text-xs text-indigo-600 font-semibold">AI caută...</span>
-                    
-                    <div id="suggestions-box" class="absolute left-0 right-0 bg-white border border-gray-200 rounded-xl mt-1 shadow-xl max-h-60 overflow-y-auto hidden z-20 divide-y divide-gray-100"></div>
-                </div>
+        <!-- CHAT-STYLE FOOD INPUT & PREVIEW -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-5 relative">
+            <div class="relative flex items-center">
+                <input type="text" id="food-name" placeholder="Type what you ate (e.g. milk, 2 eggs, banana)..." oninput="handleSearch()" autocomplete="off"
+                    class="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-sm transition">
+                <span id="loading-spinner" class="hidden absolute right-3.5 text-xs text-indigo-600 font-semibold animate-pulse">AI...</span>
+                <button id="clear-search-btn" onclick="resetSelection()" class="hidden absolute right-3.5 text-gray-400 hover:text-gray-600 text-sm font-bold">✕</button>
+            </div>
 
-                <div class="grid grid-cols-2 gap-2">
+            <!-- AI Suggestions Dropdown -->
+            <div id="suggestions-box" class="absolute left-4 right-4 bg-white border border-gray-200 rounded-2xl mt-2 shadow-xl max-h-64 overflow-y-auto hidden z-20 divide-y divide-gray-100"></div>
+
+            <!-- Read-Only Nutrition Preview Card -->
+            <div id="preview-card" class="hidden mt-3 bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 transition-all">
+                <div class="flex justify-between items-start">
                     <div>
-                        <label class="text-xs text-gray-500 ml-1">Calorii / porție</label>
-                        <input type="number" id="kcal-per-portion" placeholder="kcal" oninput="calculateTotalKcal()" required
-                            class="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-gray-50">
+                        <p id="preview-name" class="font-bold text-gray-800 text-sm"></p>
+                        <p id="preview-portion-label" class="text-xs text-indigo-700 font-medium mt-0.5"></p>
                     </div>
-                    <div>
-                        <label class="text-xs text-gray-500 ml-1">Nr. porții</label>
-                        <input type="number" step="1" min="1" id="food-portions" value="1" placeholder="Porții" oninput="calculateTotalKcal()" required
-                            class="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    <div class="text-right">
+                        <span class="text-xl font-extrabold text-indigo-600"><span id="preview-kcal">0</span> <span class="text-xs font-normal">kcal</span></span>
                     </div>
                 </div>
 
-                <div class="bg-indigo-50 p-3 rounded-xl flex justify-between items-center">
-                    <span class="text-sm font-medium text-indigo-900">Total de adăugat:</span>
-                    <span class="text-lg font-bold text-indigo-600"><span id="calculated-kcal">0</span> kcal</span>
+                <!-- Read-Only Macro Badges -->
+                <div class="grid grid-cols-4 gap-1.5 my-3 text-center">
+                    <div class="bg-white/90 py-1.5 px-1 rounded-xl border border-blue-100">
+                        <p class="text-[10px] font-semibold text-blue-600 uppercase">Protein</p>
+                        <p class="text-xs font-bold text-gray-800"><span id="preview-protein">0</span>g</p>
+                    </div>
+                    <div class="bg-white/90 py-1.5 px-1 rounded-xl border border-amber-100">
+                        <p class="text-[10px] font-semibold text-amber-600 uppercase">Carbs</p>
+                        <p class="text-xs font-bold text-gray-800"><span id="preview-carbs">0</span>g</p>
+                    </div>
+                    <div class="bg-white/90 py-1.5 px-1 rounded-xl border border-rose-100">
+                        <p class="text-[10px] font-semibold text-rose-600 uppercase">Fat</p>
+                        <p class="text-xs font-bold text-gray-800"><span id="preview-fat">0</span>g</p>
+                    </div>
+                    <div class="bg-white/90 py-1.5 px-1 rounded-xl border border-emerald-100">
+                        <p class="text-[10px] font-semibold text-emerald-600 uppercase">Fiber</p>
+                        <p class="text-xs font-bold text-gray-800"><span id="preview-fiber">0</span>g</p>
+                    </div>
                 </div>
 
-                <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-2.5 rounded-xl hover:bg-indigo-700 transition text-sm shadow-md">
-                    Adaugă în listă
-                </button>
-            </form>
+                <!-- Mode Switcher: Serving vs Exact Weight/Volume (g / ml) -->
+                <div id="unit-mode-switch" class="hidden flex bg-white/80 p-1 rounded-xl border border-indigo-100 mb-3 text-xs">
+                    <button type="button" id="mode-serving-btn" onclick="setMeasureMode('serving')" 
+                        class="flex-1 py-1.5 rounded-lg font-semibold transition bg-indigo-600 text-white shadow-xs">
+                        By Serving
+                    </button>
+                    <button type="button" id="mode-weight-btn" onclick="setMeasureMode('weight')" 
+                        class="flex-1 py-1.5 rounded-lg font-semibold transition text-gray-600 hover:text-indigo-600">
+                        Custom (<span id="weight-unit-label">g</span>)
+                    </button>
+                </div>
+
+                <!-- Quantity Control + Add Button -->
+                <div class="flex items-center justify-between gap-3 pt-1">
+                    <!-- Option A: Serving Stepper (+ / -) -->
+                    <div id="serving-control" class="flex items-center bg-white border border-gray-200 rounded-xl px-2 py-1 shadow-xs select-none">
+                        <span class="text-xs text-gray-400 mr-2 pl-1">Servings:</span>
+                        <button type="button" onclick="stepPreviewServings(-1)" class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 font-bold text-base transition">−</button>
+                        <span id="preview-portions-display" class="w-9 text-center text-sm font-bold text-gray-800">1</span>
+                        <button type="button" onclick="stepPreviewServings(1)" class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 font-bold text-base transition">+</button>
+                    </div>
+
+                    <!-- Option B: Custom Weight/Volume Input (g or ml) -->
+                    <div id="weight-control" class="hidden flex items-center bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-xs">
+                        <input type="number" step="1" min="1" inputmode="numeric" id="custom-weight-input" value="100" oninput="updatePreviewTotals()"
+                            class="w-16 text-center text-sm font-bold text-gray-800 focus:outline-none">
+                        <span id="custom-weight-suffix" class="text-xs font-semibold text-gray-500 ml-1">g</span>
+                    </div>
+
+                    <button type="button" onclick="confirmAddFood()" class="flex-1 bg-indigo-600 text-white font-semibold py-2.5 px-4 rounded-xl hover:bg-indigo-700 transition text-sm shadow-sm">
+                        Add to Log
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <!-- Lista de alimente consumate -->
+        <!-- Consumed Today List -->
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-            <h3 class="font-bold text-gray-700 mb-3">Consumat astăzi</h3>
-            <div id="food-list" class="space-y-2 max-h-60 overflow-y-auto">
-                <p class="text-gray-400 text-sm text-center py-4">Niciun aliment adăugat astăzi.</p>
+            <h3 class="font-bold text-gray-700 mb-3">Consumed Today</h3>
+            <div id="food-list" class="space-y-2.5 max-h-80 overflow-y-auto">
+                <p class="text-gray-400 text-sm text-center py-4">No food logged today.</p>
             </div>
         </div>
 
         <script>
             const dailyGoal = {{ daily_goal }};
             let searchTimeout = null;
-            let selectedPortionLabel = '1 porție';
+            let selectedFood = null;
+            let currentPreviewPortions = 1;
+            let measureMode = 'serving'; // 'serving' or 'weight'
+
+            // Extract base numeric weight/volume and unit (g or ml) from portion string
+            function extractWeightInfo(portionStr) {
+                const regex = /(~?\s*)(\d+(?:\.\d+)?)\s*(g|ml)\b/i;
+                const match = portionStr.match(regex);
+                if (match) {
+                    return {
+                        hasWeight: true,
+                        amount: parseFloat(match[2]),
+                        unit: match[3].toLowerCase()
+                    };
+                }
+                return { hasWeight: false, amount: 0, unit: 'g' };
+            }
+
+            function formatScaledPortion(basePortion, portions) {
+                const regex = /(~?\s*)(\d+(?:\.\d+)?)\s*(g|ml)\b/i;
+                const match = basePortion.match(regex);
+                let scaledText = basePortion;
+
+                if (match) {
+                    const prefix = match[1];
+                    const num = parseFloat(match[2]);
+                    const unit = match[3];
+                    const scaledVal = Math.round(num * portions);
+                    scaledText = basePortion.replace(regex, `${prefix}${scaledVal}${unit}`);
+                }
+
+                const cleanPortions = +portions.toFixed(2);
+                return cleanPortions === 1 ? scaledText : `${cleanPortions}x ${scaledText}`;
+            }
 
             function handleSearch() {
                 clearTimeout(searchTimeout);
                 const query = document.getElementById('food-name').value.trim();
                 const box = document.getElementById('suggestions-box');
+                const clearBtn = document.getElementById('clear-search-btn');
+
+                if (query.length > 0) {
+                    clearBtn.classList.remove('hidden');
+                } else {
+                    clearBtn.classList.add('hidden');
+                    resetSelection();
+                    return;
+                }
+
+                document.getElementById('preview-card').classList.add('hidden');
+                selectedFood = null;
 
                 if (query.length < 2) {
                     box.classList.add('hidden');
@@ -181,92 +290,208 @@
                 }
 
                 document.getElementById('loading-spinner').classList.remove('hidden');
-                searchTimeout = setTimeout(() => fetchFoodFromBackend(query), 600);
+                clearBtn.classList.add('hidden');
+                searchTimeout = setTimeout(() => fetchFoodFromBackend(query), 550);
             }
 
             async function fetchFoodFromBackend(query) {
                 const box = document.getElementById('suggestions-box');
                 const spinner = document.getElementById('loading-spinner');
+                const clearBtn = document.getElementById('clear-search-btn');
 
                 try {
                     const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
                     const validProducts = await response.json();
                     spinner.classList.add('hidden');
+                    clearBtn.classList.remove('hidden');
 
                     if (validProducts.length === 0) {
-                        box.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">Niciun rezultat. Poți scrie caloriile manual mai jos.</div>`;
+                        box.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">No match found. Try describing it differently.</div>`;
                         box.classList.remove('hidden');
                         return;
                     }
 
                     box.innerHTML = validProducts.map(product => `
-                        <div onclick="selectFood('${product.nume}', '${product.portie}', ${product.kcal})" class="px-4 py-2.5 hover:bg-indigo-50 cursor-pointer text-sm flex justify-between items-center transition">
-                            <div class="pr-2">
-                                <p class="font-medium text-gray-800">${product.nume}</p>
-                                <p class="text-xs text-gray-400">${product.portie}</p>
+                        <div onclick='selectFoodItem(${JSON.stringify(product)})' 
+                             class="px-4 py-3 hover:bg-indigo-50 cursor-pointer text-sm transition">
+                            <div class="flex justify-between items-center">
+                                <p class="font-semibold text-gray-800 pr-2">${product.name}</p>
+                                <span class="text-indigo-600 font-bold text-xs whitespace-nowrap bg-indigo-50 px-2 py-0.5 rounded-md">${product.kcal} kcal</span>
                             </div>
-                            <span class="text-indigo-600 font-bold text-xs whitespace-nowrap bg-indigo-50 px-2 py-1 rounded-md">${product.kcal} kcal</span>
+                            <div class="flex justify-between items-center mt-1 text-[11px] text-gray-400">
+                                <span>${product.portion}</span>
+                                <span>P: ${product.protein}g • C: ${product.carbs}g • F: ${product.fat}g • Fib: ${product.fiber}g</span>
+                            </div>
                         </div>
                     `).join('');
 
                     box.classList.remove('hidden');
                 } catch (error) {
                     spinner.classList.add('hidden');
-                    console.error("Eroare server:", error);
+                    clearBtn.classList.remove('hidden');
+                    console.error("Server error:", error);
                 }
             }
 
-            function selectFood(name, portionLabel, kcal) {
-                document.getElementById('food-name').value = name;
-                document.getElementById('kcal-per-portion').value = kcal;
-                document.getElementById('food-portions').value = 1;
-                selectedPortionLabel = portionLabel.replace('⭐ ', '');
+            function selectFoodItem(product) {
+                const cleanPortion = product.portion.replace('⭐ ', '');
+                const weightInfo = extractWeightInfo(cleanPortion);
+
+                selectedFood = {
+                    name: product.name,
+                    portion: cleanPortion,
+                    kcal: product.kcal,
+                    protein: product.protein,
+                    fat: product.fat,
+                    carbs: product.carbs,
+                    fiber: product.fiber,
+                    weightInfo: weightInfo
+                };
+
+                currentPreviewPortions = 1;
+                document.getElementById('food-name').value = selectedFood.name;
                 document.getElementById('suggestions-box').classList.add('hidden');
-                calculateTotalKcal();
+                document.getElementById('preview-name').innerText = selectedFood.name;
+
+                // Show or hide the Serving vs Weight/Volume toggle depending on whether weight is known
+                const modeSwitch = document.getElementById('unit-mode-switch');
+                if (weightInfo.hasWeight) {
+                    modeSwitch.classList.remove('hidden');
+                    document.getElementById('weight-unit-label').innerText = weightInfo.unit;
+                    document.getElementById('custom-weight-suffix').innerText = weightInfo.unit;
+                    document.getElementById('custom-weight-input').value = weightInfo.amount;
+                } else {
+                    modeSwitch.classList.add('hidden');
+                }
+
+                setMeasureMode('serving');
+                document.getElementById('preview-card').classList.remove('hidden');
             }
 
-            function calculateTotalKcal() {
-                const kcalPortion = parseFloat(document.getElementById('kcal-per-portion').value) || 0;
-                const portions = parseFloat(document.getElementById('food-portions').value) || 0;
-                const total = Math.round(kcalPortion * portions);
-                document.getElementById('calculated-kcal').innerText = total;
+            function setMeasureMode(mode) {
+                measureMode = mode;
+                const servingBtn = document.getElementById('mode-serving-btn');
+                const weightBtn = document.getElementById('mode-weight-btn');
+                const servingCtrl = document.getElementById('serving-control');
+                const weightCtrl = document.getElementById('weight-control');
+
+                if (mode === 'serving') {
+                    servingBtn.className = 'flex-1 py-1.5 rounded-lg font-semibold transition bg-indigo-600 text-white shadow-xs';
+                    weightBtn.className = 'flex-1 py-1.5 rounded-lg font-semibold transition text-gray-600 hover:text-indigo-600';
+                    servingCtrl.classList.remove('hidden');
+                    weightCtrl.classList.add('hidden');
+                } else {
+                    weightBtn.className = 'flex-1 py-1.5 rounded-lg font-semibold transition bg-indigo-600 text-white shadow-xs';
+                    servingBtn.className = 'flex-1 py-1.5 rounded-lg font-semibold transition text-gray-600 hover:text-indigo-600';
+                    weightCtrl.classList.remove('hidden');
+                    servingCtrl.classList.add('hidden');
+                    document.getElementById('custom-weight-input').focus();
+                }
+                updatePreviewTotals();
+            }
+
+            function stepPreviewServings(delta) {
+                let next = +(currentPreviewPortions + delta).toFixed(1);
+                if (next < 1) next = 1;
+                currentPreviewPortions = next;
+                updatePreviewTotals();
+            }
+
+            function getEffectiveMultiplier() {
+                if (!selectedFood) return 1;
+                if (measureMode === 'weight' && selectedFood.weightInfo.hasWeight) {
+                    const enteredWeight = parseFloat(document.getElementById('custom-weight-input').value) || 0;
+                    return enteredWeight / selectedFood.weightInfo.amount;
+                }
+                return currentPreviewPortions;
+            }
+
+            function updatePreviewTotals() {
+                if (!selectedFood) return;
+                const multiplier = getEffectiveMultiplier();
+
+                document.getElementById('preview-portions-display').innerText = currentPreviewPortions;
+
+                if (measureMode === 'weight' && selectedFood.weightInfo.hasWeight) {
+                    const enteredWeight = parseFloat(document.getElementById('custom-weight-input').value) || 0;
+                    document.getElementById('preview-portion-label').innerText = `${enteredWeight}${selectedFood.weightInfo.unit} (base: ${selectedFood.portion})`;
+                } else {
+                    document.getElementById('preview-portion-label').innerText = formatScaledPortion(selectedFood.portion, currentPreviewPortions);
+                }
+
+                document.getElementById('preview-kcal').innerText = Math.round(selectedFood.kcal * multiplier);
+                document.getElementById('preview-protein').innerText = (selectedFood.protein * multiplier).toFixed(1);
+                document.getElementById('preview-carbs').innerText = (selectedFood.carbs * multiplier).toFixed(1);
+                document.getElementById('preview-fat').innerText = (selectedFood.fat * multiplier).toFixed(1);
+                document.getElementById('preview-fiber').innerText = (selectedFood.fiber * multiplier).toFixed(1);
+            }
+
+            function resetSelection() {
+                selectedFood = null;
+                currentPreviewPortions = 1;
+                measureMode = 'serving';
+                document.getElementById('food-name').value = '';
+                document.getElementById('suggestions-box').classList.add('hidden');
+                document.getElementById('preview-card').classList.add('hidden');
+                document.getElementById('clear-search-btn').classList.add('hidden');
             }
 
             document.addEventListener('click', function(e) {
-                if (!document.getElementById('food-name').contains(e.target)) {
+                const container = document.getElementById('food-name').parentElement.parentElement;
+                if (!container.contains(e.target)) {
                     document.getElementById('suggestions-box').classList.add('hidden');
                 }
             });
 
-            async function addFood(event) {
-                event.preventDefault();
-                const baseName = document.getElementById('food-name').value;
-                const portions = parseFloat(document.getElementById('food-portions').value) || 1;
-                const kcalUnitar = parseInt(document.getElementById('kcal-per-portion').value) || 0;
-                const totalCalories = parseInt(document.getElementById('calculated-kcal').innerText);
+            async function confirmAddFood() {
+                if (!selectedFood) return;
+                const multiplier = getEffectiveMultiplier();
+                if (multiplier <= 0) return;
 
-                if (totalCalories <= 0) return;
+                const totalCalories = Math.round(selectedFood.kcal * multiplier);
+                let displayLabel = '';
 
-                const displayLabel = portions === 1 
-                    ? `${baseName} (${selectedPortionLabel})` 
-                    : `${baseName} (${portions}x ${selectedPortionLabel})`;
+                if (measureMode === 'weight' && selectedFood.weightInfo.hasWeight) {
+                    const enteredWeight = parseFloat(document.getElementById('custom-weight-input').value) || 0;
+                    displayLabel = `${selectedFood.name} (${enteredWeight}${selectedFood.weightInfo.unit})`;
+                } else {
+                    const scaledPortionText = formatScaledPortion(selectedFood.portion, currentPreviewPortions);
+                    displayLabel = `${selectedFood.name} (${scaledPortionText})`;
+                }
 
                 await fetch('/api/add', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        aliment: displayLabel,
-                        calorii: totalCalories,
-                        nume_baza: baseName,
-                        portie_baza: selectedPortionLabel,
-                        kcal_unitar: kcalUnitar
+                        food: displayLabel,
+                        calories: totalCalories,
+                        protein: parseFloat((selectedFood.protein * multiplier).toFixed(1)),
+                        fat: parseFloat((selectedFood.fat * multiplier).toFixed(1)),
+                        carbs: parseFloat((selectedFood.carbs * multiplier).toFixed(1)),
+                        fiber: parseFloat((selectedFood.fiber * multiplier).toFixed(1)),
+                        portions: +multiplier.toFixed(2),
+                        base_name: selectedFood.name,
+                        base_portion: selectedFood.portion,
+                        unit_kcal: selectedFood.kcal,
+                        unit_protein: selectedFood.protein,
+                        unit_fat: selectedFood.fat,
+                        unit_carbs: selectedFood.carbs,
+                        unit_fiber: selectedFood.fiber
                     })
                 });
 
-                document.getElementById('calorie-form').reset();
-                document.getElementById('food-portions').value = 1;
-                document.getElementById('calculated-kcal').innerText = "0";
-                selectedPortionLabel = '1 porție';
+                resetSelection();
+                loadMeals();
+            }
+
+            async function updateMealPortions(id, newPortions) {
+                if (newPortions < 1) return;
+
+                await fetch(`/api/update_portions/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ portions: newPortions })
+                });
                 loadMeals();
             }
 
@@ -283,23 +508,49 @@
                 const totalElement = document.getElementById('total-calories');
                 const progressBar = document.getElementById('progress-bar');
 
-                let total = userItems.reduce((sum, item) => sum + item.calories, 0);
-                totalElement.innerText = total;
-                let percentage = Math.min((total / dailyGoal) * 100, 100);
+                let totalKcal = 0, totalP = 0, totalC = 0, totalF = 0, totalFib = 0;
+                userItems.forEach(item => {
+                    totalKcal += item.calories;
+                    totalP += item.protein || 0;
+                    totalC += item.carbs || 0;
+                    totalF += item.fat || 0;
+                    totalFib += item.fiber || 0;
+                });
+
+                totalElement.innerText = totalKcal;
+                document.getElementById('total-protein').innerText = totalP.toFixed(1);
+                document.getElementById('total-carbs').innerText = totalC.toFixed(1);
+                document.getElementById('total-fat').innerText = totalF.toFixed(1);
+                document.getElementById('total-fiber').innerText = totalFib.toFixed(1);
+
+                let percentage = Math.min((totalKcal / dailyGoal) * 100, 100);
                 progressBar.style.width = `${percentage}%`;
 
                 if (userItems.length === 0) {
-                    listContainer.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Niciun aliment adăugat astăzi.</p>';
+                    listContainer.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">No food logged today.</p>';
                     return;
                 }
 
                 listContainer.innerHTML = userItems.map(item => `
                     <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
-                        <div class="pr-2">
+                        <div class="pr-2 flex-1">
                             <p class="font-medium text-sm text-gray-800">${item.name}</p>
                             <p class="text-xs text-indigo-600 font-semibold">${item.calories} kcal</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">P: ${item.protein}g • C: ${item.carbs}g • F: ${item.fat}g • Fib: ${item.fiber}g</p>
                         </div>
-                        <button onclick="deleteFood(${item.id})" class="text-red-400 hover:text-red-600 text-xs font-bold px-2 py-1">✕</button>
+                        <div class="flex items-center space-x-2">
+                            ${item.can_edit_portions && Number.isInteger(item.portions) ? `
+                            <div class="flex items-center bg-white border border-gray-200 rounded-lg px-1 py-0.5 select-none">
+                                <button onclick="updateMealPortions(${item.id}, ${item.portions - 1})" 
+                                    ${item.portions <= 1 ? 'disabled' : ''}
+                                    class="w-6 h-6 flex items-center justify-center rounded text-gray-500 hover:text-indigo-600 disabled:opacity-30 font-bold text-xs">−</button>
+                                <span class="w-7 text-center text-xs font-bold text-gray-700">${item.portions}</span>
+                                <button onclick="updateMealPortions(${item.id}, ${item.portions + 1})" 
+                                    class="w-6 h-6 flex items-center justify-center rounded text-gray-500 hover:text-indigo-600 font-bold text-xs">+</button>
+                            </div>
+                            ` : ''}
+                            <button onclick="deleteFood(${item.id})" class="text-red-400 hover:text-red-600 text-xs font-bold px-1.5 py-1">✕</button>
+                        </div>
                     </div>
                 `).join('');
             }
