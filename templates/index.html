@@ -102,80 +102,94 @@
         </script>
 
         {% else %}
-        <!-- TOP HEADER WITH PROFILE SWITCHER -->
+        <!-- TOP HEADER + 3-TAB NAVIGATION (TRACKER / FRIENDS / PROFILE) -->
         <header class="flex justify-between items-center my-4">
             <div>
                 <h1 class="text-xl font-bold text-indigo-600">Calorie Tracker</h1>
                 <p class="text-xs text-gray-500">Hi, <span class="font-semibold text-gray-700 capitalize">{{ username }}</span>!</p>
             </div>
-            <div class="flex items-center space-x-2">
-                <button type="button" id="nav-profile-btn" onclick="switchView('profile')"
-                    class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg transition border border-indigo-100">
-                    Profile
-                </button>
-                <button type="button" id="nav-tracker-btn" onclick="switchView('tracker')"
-                    class="hidden text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-1.5 rounded-lg transition shadow-xs">
-                    Tracker
-                </button>
-                <a href="/logout" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-3 py-1.5 rounded-lg transition">
-                    Log Out
-                </a>
-            </div>
+            <a href="/logout" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-3 py-1.5 rounded-lg transition">
+                Log Out
+            </a>
         </header>
+
+        <!-- Main Tab Switcher Bar -->
+        <nav class="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100 mb-4">
+            <button type="button" id="tab-btn-tracker" onclick="switchView('tracker')"
+                class="flex-1 py-2 text-xs font-bold rounded-xl transition bg-indigo-600 text-white shadow-xs">
+                Tracker
+            </button>
+            <button type="button" id="tab-btn-friends" onclick="switchView('friends')"
+                class="flex-1 py-2 text-xs font-bold rounded-xl transition text-gray-600 hover:text-indigo-600 relative">
+                Friends
+                <span id="friends-incoming-dot" class="hidden inline-block w-2 h-2 rounded-full bg-rose-500 ml-1 align-middle"></span>
+            </button>
+            <button type="button" id="tab-btn-profile" onclick="switchView('profile')"
+                class="flex-1 py-2 text-xs font-bold rounded-xl transition text-gray-600 hover:text-indigo-600">
+                Profile
+            </button>
+        </nav>
+
+        <!-- SHARED DATE NAVIGATION BAR (Used for both Tracker & Viewing Friend's Progress) -->
+        <div class="relative mb-4 select-none" id="date-nav-container">
+            <div class="bg-white px-3 py-2 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <button type="button" onclick="changeDate(-1)" class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 font-bold text-base transition">
+                    ‹
+                </button>
+
+                <button type="button" onclick="toggleCalendar()" class="flex items-center space-x-1.5 text-sm font-bold text-gray-800 px-3 py-1.5 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition">
+                    <span id="date-display-label">Today</span>
+                </button>
+
+                <button type="button" id="next-day-btn" onclick="changeDate(1)" disabled
+                    class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 disabled:opacity-25 disabled:pointer-events-none font-bold text-base transition">
+                    ›
+                </button>
+            </div>
+
+            <!-- Interactive Calendar Dropdown -->
+            <div id="calendar-popover" class="hidden absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-30">
+                <div class="flex items-center justify-between mb-3">
+                    <button type="button" onclick="changeCalendarMonth(-1)" class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 font-bold">‹</button>
+                    <span id="calendar-month-title" class="text-sm font-bold text-gray-800"></span>
+                    <button type="button" id="cal-next-month-btn" onclick="changeCalendarMonth(1)" class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-25 font-bold">›</button>
+                </div>
+
+                <div class="grid grid-cols-7 text-center text-[10px] font-semibold text-gray-400 uppercase mb-1">
+                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                </div>
+
+                <div id="calendar-days-grid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+
+                <div class="mt-3 pt-2 border-t border-gray-100 flex justify-between items-center text-[11px] text-gray-400">
+                    <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block"></span> Logged days</span>
+                    <button type="button" onclick="jumpToToday()" class="text-indigo-600 font-semibold hover:underline">Jump to Today</button>
+                </div>
+            </div>
+        </div>
 
         <!-- ==================== VIEW 1: CALORIE & MACRO TRACKER ==================== -->
         <div id="tracker-view">
-            <!-- DATE NAVIGATION BAR (DD/MM/YYYY European Format) -->
-            <div class="relative mb-4 select-none" id="date-nav-container">
-                <div class="bg-white px-3 py-2 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                    <button type="button" onclick="changeDate(-1)" class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 font-bold text-base transition">
-                        ‹
-                    </button>
-
-                    <button type="button" onclick="toggleCalendar()" class="flex items-center space-x-1.5 text-sm font-bold text-gray-800 px-3 py-1.5 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition">
-                        <span id="date-display-label">Today</span>
-                    </button>
-
-                    <button type="button" id="next-day-btn" onclick="changeDate(1)" disabled
-                        class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 disabled:opacity-25 disabled:pointer-events-none font-bold text-base transition">
-                        ›
-                    </button>
-                </div>
-
-                <!-- Interactive Calendar Dropdown -->
-                <div id="calendar-popover" class="hidden absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-30">
-                    <div class="flex items-center justify-between mb-3">
-                        <button type="button" onclick="changeCalendarMonth(-1)" class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 font-bold">‹</button>
-                        <span id="calendar-month-title" class="text-sm font-bold text-gray-800"></span>
-                        <button type="button" id="cal-next-month-btn" onclick="changeCalendarMonth(1)" class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-25 font-bold">›</button>
-                    </div>
-
-                    <div class="grid grid-cols-7 text-center text-[10px] font-semibold text-gray-400 uppercase mb-1">
-                        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-                    </div>
-
-                    <div id="calendar-days-grid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
-
-                    <div class="mt-3 pt-2 border-t border-gray-100 flex justify-between items-center text-[11px] text-gray-400">
-                        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block"></span> Logged days</span>
-                        <button type="button" onclick="jumpToToday()" class="text-indigo-600 font-semibold hover:underline">Jump to Today</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Daily Summary Card with Calorie + Individual Macro Progress Bars -->
+            <!-- Daily Summary Card with kcal left / kcal over + Individual Macro Progress Bars -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-5 text-center">
                 <h2 id="summary-heading" class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Today's Progress</h2>
-                <div class="text-4xl font-extrabold text-indigo-600 my-2">
+                <div class="text-4xl font-extrabold text-indigo-600 mt-2 mb-1">
                     <span id="total-calories">0</span> <span class="text-lg text-gray-400 font-normal">/ <span id="goal-display-text">{{ daily_goal }}</span> kcal</span>
                 </div>
-                <div class="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden mt-3 mb-4">
+
+                <!-- Dynamic Kcal Left / Kcal Over Badge -->
+                <div class="mb-3">
+                    <span id="calories-remaining-badge" class="inline-block text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700">
+                        {{ daily_goal }} kcal left
+                    </span>
+                </div>
+
+                <div class="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden mb-4">
                     <div id="progress-bar" class="bg-indigo-600 h-full transition-all duration-300" style="width: 0%"></div>
                 </div>
 
                 <!-- Macros Grid with Daily Targets & Live Progress Bars -->
                 <div class="grid grid-cols-2 gap-2.5 pt-3 border-t border-gray-100 text-left">
-                    <!-- Protein -->
                     <div class="bg-blue-50/80 p-2.5 rounded-xl border border-blue-100/70">
                         <div class="flex justify-between items-baseline">
                             <span class="text-[11px] font-bold text-blue-700 uppercase">Protein</span>
@@ -188,7 +202,6 @@
                         </div>
                     </div>
 
-                    <!-- Carbs -->
                     <div class="bg-amber-50/80 p-2.5 rounded-xl border border-amber-100/70">
                         <div class="flex justify-between items-baseline">
                             <span class="text-[11px] font-bold text-amber-700 uppercase">Carbs</span>
@@ -201,7 +214,6 @@
                         </div>
                     </div>
 
-                    <!-- Fat -->
                     <div class="bg-rose-50/80 p-2.5 rounded-xl border border-rose-100/70">
                         <div class="flex justify-between items-baseline">
                             <span class="text-[11px] font-bold text-rose-700 uppercase">Fat</span>
@@ -214,7 +226,6 @@
                         </div>
                     </div>
 
-                    <!-- Fiber -->
                     <div class="bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-100/70">
                         <div class="flex justify-between items-baseline">
                             <span class="text-[11px] font-bold text-emerald-700 uppercase">Fiber</span>
@@ -229,8 +240,17 @@
                 </div>
             </div>
 
-            <!-- CHAT-STYLE FOOD INPUT & PREVIEW -->
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-5 relative">
+            <!-- CHAT-STYLE COMMAND BOX (Hidden until '+' on a meal is clicked) -->
+            <div id="food-command-box" class="hidden bg-white p-4 rounded-2xl shadow-md border-2 border-indigo-200 mb-5 relative transition-all">
+                <div class="flex items-center justify-between mb-2.5">
+                    <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                        Adding to: <span id="active-meal-label" class="capitalize">Breakfast</span>
+                    </span>
+                    <button type="button" onclick="closeCommandBox()" class="text-xs text-gray-400 hover:text-gray-600 font-semibold px-2 py-0.5 rounded-lg hover:bg-gray-100">
+                        Close ✕
+                    </button>
+                </div>
+
                 <div class="relative flex items-center">
                     <input type="text" id="food-name" placeholder="Type what you ate (e.g. milk, 2 eggs, banana)..." oninput="handleSearch()" autocomplete="off"
                         class="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-sm transition">
@@ -253,7 +273,6 @@
                         </div>
                     </div>
 
-                    <!-- Read-Only Macro Badges -->
                     <div class="grid grid-cols-4 gap-1.5 my-3 text-center">
                         <div class="bg-white/90 py-1.5 px-1 rounded-xl border border-blue-100">
                             <p class="text-[10px] font-semibold text-blue-600 uppercase">Protein</p>
@@ -273,7 +292,6 @@
                         </div>
                     </div>
 
-                    <!-- Mode Switcher -->
                     <div id="unit-mode-switch" class="hidden flex bg-white/80 p-1 rounded-xl border border-indigo-100 mb-3 text-xs">
                         <button type="button" id="mode-serving-btn" onclick="setMeasureMode('serving')" 
                             class="flex-1 py-1.5 rounded-lg font-semibold transition bg-indigo-600 text-white shadow-xs">
@@ -285,7 +303,6 @@
                         </button>
                     </div>
 
-                    <!-- Quantity Control + Add Button -->
                     <div class="flex items-center justify-between gap-3 pt-1">
                         <div id="serving-control" class="flex items-center bg-white border border-gray-200 rounded-xl px-2 py-1 shadow-xs select-none">
                             <span class="text-xs text-gray-400 mr-2 pl-1">Servings:</span>
@@ -301,22 +318,141 @@
                         </div>
 
                         <button type="button" onclick="confirmAddFood()" class="flex-1 bg-indigo-600 text-white font-semibold py-2.5 px-4 rounded-xl hover:bg-indigo-700 transition text-sm shadow-sm">
-                            Add to Log
+                            Add to <span id="confirm-meal-btn-label" class="capitalize">Breakfast</span>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Consumed List -->
+            <!-- Consumed Today Sections: Breakfast, Lunch, Dinner, Snack -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                <h3 id="list-heading" class="font-bold text-gray-700 mb-3">Consumed Today</h3>
-                <div id="food-list" class="space-y-2.5 max-h-80 overflow-y-auto">
-                    <p class="text-gray-400 text-sm text-center py-4">No food logged for this day.</p>
-                </div>
+                <h3 id="list-heading" class="font-bold text-gray-700 mb-4">Consumed Today</h3>
+                <div id="meal-sections-container" class="space-y-4"></div>
             </div>
         </div>
 
-        <!-- ==================== VIEW 2: USER PROFILE & WEIGHT LOG ==================== -->
+        <!-- ==================== VIEW 2: FRIENDS & MUTUAL PROGRESS ==================== -->
+        <div id="friends-view" class="hidden space-y-5">
+            <!-- Add Friend Card -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-gray-700 mb-1">Add a Friend</h3>
+                <p class="text-xs text-gray-400 mb-3">Once you both add each other, you can view each other's daily progress.</p>
+
+                <div id="friend-msg" class="hidden text-xs p-2.5 rounded-xl mb-3 font-medium"></div>
+
+                <form onsubmit="submitAddFriend(event)" class="flex gap-2">
+                    <input type="text" id="friend-username-input" placeholder="Enter friend's username..." required
+                        class="flex-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-sm">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition shadow-xs">
+                        Add
+                    </button>
+                </form>
+            </div>
+
+            <!-- Incoming Friend Requests (People who added you) -->
+            <div id="incoming-friends-card" class="hidden bg-white p-5 rounded-2xl shadow-sm border border-indigo-100">
+                <h3 class="font-bold text-indigo-700 text-sm mb-3">Added You (Add Back to Connect)</h3>
+                <div id="incoming-friends-list" class="space-y-2"></div>
+            </div>
+
+            <!-- Mutual Friends List -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-gray-700 mb-3">Mutual Friends</h3>
+                <div id="mutual-friends-list" class="space-y-2.5">
+                    <p class="text-gray-400 text-sm text-center py-4">No mutual friends yet.</p>
+                </div>
+            </div>
+
+            <!-- Selected Friend's Progress Card (Shown when clicking a friend) -->
+            <div id="friend-progress-panel" class="hidden bg-white p-5 rounded-2xl shadow-md border-2 border-indigo-200 space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div>
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Friend's Progress</p>
+                        <h3 id="friend-prog-title" class="text-lg font-extrabold text-gray-800 capitalize"></h3>
+                    </div>
+                    <button type="button" onclick="closeFriendProgress()" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold px-3 py-1.5 rounded-xl">
+                        Close ✕
+                    </button>
+                </div>
+
+                <!-- Friend's Calorie Summary -->
+                <div class="text-center">
+                    <div class="text-3xl font-extrabold text-indigo-600">
+                        <span id="friend-total-kcal">0</span> <span class="text-base text-gray-400 font-normal">/ <span id="friend-goal-kcal">2000</span> kcal</span>
+                    </div>
+                    <div class="mt-1.5 mb-3">
+                        <span id="friend-kcal-badge" class="inline-block text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700">
+                            2000 kcal left
+                        </span>
+                    </div>
+                    <div class="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden">
+                        <div id="friend-progress-bar" class="bg-indigo-600 h-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Friend's Macros Grid -->
+                <div class="grid grid-cols-2 gap-2 text-left">
+                    <div class="bg-blue-50/80 p-2.5 rounded-xl border border-blue-100/70">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-[11px] font-bold text-blue-700 uppercase">Protein</span>
+                            <span class="text-xs font-bold text-gray-800">
+                                <span id="friend-p-val">0</span><span class="text-[11px] font-normal text-gray-500"> / <span id="friend-p-target">0</span>g</span>
+                            </span>
+                        </div>
+                        <div class="w-full bg-blue-200/70 h-1.5 rounded-full overflow-hidden mt-1.5">
+                            <div id="friend-p-bar" class="bg-blue-600 h-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50/80 p-2.5 rounded-xl border border-amber-100/70">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-[11px] font-bold text-amber-700 uppercase">Carbs</span>
+                            <span class="text-xs font-bold text-gray-800">
+                                <span id="friend-c-val">0</span><span class="text-[11px] font-normal text-gray-500"> / <span id="friend-c-target">0</span>g</span>
+                            </span>
+                        </div>
+                        <div class="w-full bg-amber-200/70 h-1.5 rounded-full overflow-hidden mt-1.5">
+                            <div id="friend-c-bar" class="bg-amber-500 h-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-rose-50/80 p-2.5 rounded-xl border border-rose-100/70">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-[11px] font-bold text-rose-700 uppercase">Fat</span>
+                            <span class="text-xs font-bold text-gray-800">
+                                <span id="friend-f-val">0</span><span class="text-[11px] font-normal text-gray-500"> / <span id="friend-f-target">0</span>g</span>
+                            </span>
+                        </div>
+                        <div class="w-full bg-rose-200/70 h-1.5 rounded-full overflow-hidden mt-1.5">
+                            <div id="friend-f-bar" class="bg-rose-500 h-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-100/70">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-[11px] font-bold text-emerald-700 uppercase">Fiber</span>
+                            <span class="text-xs font-bold text-gray-800">
+                                <span id="friend-fib-val">0</span><span class="text-[11px] font-normal text-gray-500"> / <span id="friend-fib-target">0</span>g</span>
+                            </span>
+                        </div>
+                        <div class="w-full bg-emerald-200/70 h-1.5 rounded-full overflow-hidden mt-1.5">
+                            <div id="friend-fib-bar" class="bg-emerald-600 h-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Friend's Consumed Meals Breakdown (Read-Only) -->
+                <div id="friend-meals-sections" class="space-y-2.5 pt-2 border-t border-gray-100"></div>
+            </div>
+
+            <!-- Outgoing Pending Requests -->
+            <div id="outgoing-friends-card" class="hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-gray-500 text-xs uppercase tracking-wider mb-2.5">Waiting for Them to Add You Back</h3>
+                <div id="outgoing-friends-list" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <!-- ==================== VIEW 3: USER PROFILE & WEIGHT LOG ==================== -->
         <div id="profile-view" class="hidden space-y-5">
             <!-- Profile Overview Card -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
@@ -388,7 +524,6 @@
                             class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mt-1 font-bold text-indigo-600">
                     </div>
 
-                    <!-- Current Active Daily Macro Targets Summary -->
                     <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
                         <p class="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Active Daily Macro Targets</p>
                         <div class="grid grid-cols-4 gap-1.5 text-center text-xs">
@@ -491,10 +626,43 @@
                 fiber: {{ macro_targets.fiber }}
             };
             let searchTimeout = null;
+            let friendMsgTimeout = null;
             let selectedFood = null;
             let currentPreviewPortions = 1;
             let measureMode = 'serving';
             let lastAIRecommendation = null;
+            let activeMealType = 'breakfast';
+            let currentActiveTab = 'tracker';
+            let selectedFriendUsername = null;
+
+            const MEAL_CATEGORIES = [
+                { key: 'breakfast', label: 'Breakfast' },
+                { key: 'lunch', label: 'Lunch' },
+                { key: 'dinner', label: 'Dinner' },
+                { key: 'snack', label: 'Snack' }
+            ];
+
+            function openCommandBox(mealType) {
+                activeMealType = mealType;
+                const labelObj = MEAL_CATEGORIES.find(m => m.key === mealType);
+                const labelText = labelObj ? labelObj.label : mealType;
+
+                document.getElementById('active-meal-label').innerText = labelText;
+                document.getElementById('confirm-meal-btn-label').innerText = labelText;
+
+                const cmdBox = document.getElementById('food-command-box');
+                cmdBox.classList.remove('hidden');
+
+                const inputEl = document.getElementById('food-name');
+                inputEl.placeholder = `Search food for ${labelText.toLowerCase()} (e.g. eggs, oats, chicken)...`;
+                cmdBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => inputEl.focus(), 100);
+            }
+
+            function closeCommandBox() {
+                resetSelection();
+                document.getElementById('food-command-box').classList.add('hidden');
+            }
 
             function applyMacroTargetsToUI(targets) {
                 if (!targets) return;
@@ -510,7 +678,7 @@
                 document.getElementById('profile-macro-fiber').innerText = targets.fiber;
             }
 
-            // European Date Formatting Helpers (ISO YYYY-MM-DD <-> EU DD/MM/YYYY)
+            // European Date Formatting Helpers
             function isoToEU(isoStr) {
                 if (!isoStr || !isoStr.includes('-')) return isoStr || '';
                 const [y, m, d] = isoStr.split('-');
@@ -557,32 +725,276 @@
             let calendarViewMonth = new Date().getMonth();
             let loggedDatesSet = new Set();
 
-            // Switch between Tracker view and Profile view
+            // Switch between Tracker, Friends, and Profile tabs
             function switchView(viewName) {
-                const trackerView = document.getElementById('tracker-view');
-                const profileView = document.getElementById('profile-view');
-                const profileBtn = document.getElementById('nav-profile-btn');
-                const trackerBtn = document.getElementById('nav-tracker-btn');
+                currentActiveTab = viewName;
+                const views = ['tracker', 'friends', 'profile'];
+                views.forEach(v => {
+                    const viewEl = document.getElementById(`${v}-view`);
+                    const btnEl = document.getElementById(`tab-btn-${v}`);
+                    if (v === viewName) {
+                        viewEl.classList.remove('hidden');
+                        btnEl.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition bg-indigo-600 text-white shadow-xs';
+                    } else {
+                        viewEl.classList.add('hidden');
+                        btnEl.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition text-gray-600 hover:text-indigo-600 relative';
+                    }
+                });
 
+                const dateNav = document.getElementById('date-nav-container');
                 if (viewName === 'profile') {
-                    trackerView.classList.add('hidden');
-                    profileView.classList.remove('hidden');
-                    profileBtn.classList.add('hidden');
-                    trackerBtn.classList.remove('hidden');
-
+                    dateNav.classList.add('hidden');
                     document.getElementById('weight-date-input').value = isoToEU(selectedDate);
                     loadProfileDetails();
                     loadWeightHistory();
+                } else if (viewName === 'friends') {
+                    dateNav.classList.remove('hidden');
+                    loadFriendsList();
+                    if (selectedFriendUsername) {
+                        viewFriendProgress(selectedFriendUsername);
+                    }
                 } else {
-                    profileView.classList.add('hidden');
-                    trackerView.classList.remove('hidden');
-                    trackerBtn.classList.add('hidden');
-                    profileBtn.classList.remove('hidden');
+                    dateNav.classList.remove('hidden');
                     loadMeals();
                 }
             }
 
-            // Profile Details & AI Recommendation Functions
+            // ==================== FRIENDS LOGIC ====================
+            async function loadFriendsList() {
+                const res = await fetch(`/api/friends?date=${encodeURIComponent(selectedDate)}`);
+                if (!res.ok) return;
+                const data = await res.json();
+
+                // Update notification dot if someone added you
+                const dot = document.getElementById('friends-incoming-dot');
+                if (data.incoming && data.incoming.length > 0) {
+                    dot.classList.remove('hidden');
+                } else {
+                    dot.classList.add('hidden');
+                }
+
+                // 1. Incoming requests
+                const incomingCard = document.getElementById('incoming-friends-card');
+                const incomingList = document.getElementById('incoming-friends-list');
+                if (data.incoming && data.incoming.length > 0) {
+                    incomingCard.classList.remove('hidden');
+                    incomingList.innerHTML = data.incoming.map(uname => `
+                        <div class="flex items-center justify-between bg-indigo-50/60 px-3.5 py-2.5 rounded-xl border border-indigo-100">
+                            <div class="flex items-center space-x-2.5">
+                                <div class="w-8 h-8 rounded-full bg-indigo-200 text-indigo-800 font-bold text-xs flex items-center justify-center uppercase">
+                                    ${uname[0]}
+                                </div>
+                                <span class="text-sm font-bold text-gray-800 capitalize">${uname}</span>
+                            </div>
+                            <button type="button" onclick="quickAddBack('${uname}')"
+                                class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-1.5 rounded-lg transition">
+                                Add Back
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    incomingCard.classList.add('hidden');
+                }
+
+                // 2. Mutual Friends (No Progress button, no protein summary text)
+                const mutualList = document.getElementById('mutual-friends-list');
+                if (!data.mutual || data.mutual.length === 0) {
+                    mutualList.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">No mutual friends yet. Add someone by username above!</p>';
+                } else {
+                    mutualList.innerHTML = data.mutual.map(f => {
+                        const isSelected = selectedFriendUsername === f.username;
+                        return `
+                        <div class="flex items-center justify-between p-3 rounded-xl border transition cursor-pointer hover:border-indigo-200 ${isSelected ? 'bg-indigo-50/70 border-indigo-300' : 'bg-gray-50 border-gray-100'}">
+                            <div onclick="viewFriendProgress('${f.username}')" class="flex items-center space-x-3 flex-1 min-w-0">
+                                <div class="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 font-extrabold text-sm flex items-center justify-center uppercase shrink-0">
+                                    ${f.username[0]}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-bold text-gray-800 capitalize truncate">${f.username}</p>
+                                    <p class="text-xs text-indigo-600 font-semibold">${f.calories} / ${f.daily_goal} kcal</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="removeFriend('${f.username}')" title="Remove friend"
+                                class="text-red-400 hover:text-red-600 text-xs font-bold px-2 py-1.5 shrink-0">
+                                ✕
+                            </button>
+                        </div>`;
+                    }).join('');
+                }
+
+                // 3. Outgoing pending
+                const outgoingCard = document.getElementById('outgoing-friends-card');
+                const outgoingList = document.getElementById('outgoing-friends-list');
+                if (data.outgoing && data.outgoing.length > 0) {
+                    outgoingCard.classList.remove('hidden');
+                    outgoingList.innerHTML = data.outgoing.map(uname => `
+                        <div class="flex items-center justify-between bg-gray-50 px-3.5 py-2 rounded-xl border border-gray-100">
+                            <span class="text-xs font-semibold text-gray-700 capitalize">${uname}</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[10px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-semibold">Pending</span>
+                                <button type="button" onclick="removeFriend('${uname}')" class="text-gray-400 hover:text-red-500 text-xs font-bold px-1">✕</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    outgoingCard.classList.add('hidden');
+                }
+            }
+
+            async function submitAddFriend(event) {
+                event.preventDefault();
+                const inputEl = document.getElementById('friend-username-input');
+                const uname = inputEl.value.trim();
+                if (!uname) return;
+
+                await sendFriendRequest(uname);
+                inputEl.value = '';
+            }
+
+            async function quickAddBack(uname) {
+                await sendFriendRequest(uname);
+            }
+
+            async function sendFriendRequest(uname) {
+                const msgBox = document.getElementById('friend-msg');
+                clearTimeout(friendMsgTimeout);
+                msgBox.classList.add('hidden');
+
+                const res = await fetch('/api/friends/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: uname })
+                });
+                const result = await res.json();
+
+                if (result.status === 'succes') {
+                    msgBox.innerText = result.message;
+                    msgBox.className = 'bg-emerald-50 text-emerald-700 text-xs p-2.5 rounded-xl mb-3 font-medium';
+                    msgBox.classList.remove('hidden');
+                    friendMsgTimeout = setTimeout(() => {
+                        msgBox.classList.add('hidden');
+                    }, 3500);
+
+                    await loadFriendsList();
+                    if (result.mutual) {
+                        viewFriendProgress(uname.toLowerCase());
+                    }
+                } else {
+                    msgBox.innerText = result.message || 'Could not add friend.';
+                    msgBox.className = 'bg-red-50 text-red-600 text-xs p-2.5 rounded-xl mb-3 font-medium';
+                    msgBox.classList.remove('hidden');
+                    friendMsgTimeout = setTimeout(() => {
+                        msgBox.classList.add('hidden');
+                    }, 4000);
+                }
+            }
+
+            async function removeFriend(uname) {
+                await fetch('/api/friends/remove', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: uname })
+                });
+                if (selectedFriendUsername === uname) {
+                    closeFriendProgress();
+                }
+                loadFriendsList();
+            }
+
+            async function viewFriendProgress(friendUsername) {
+                selectedFriendUsername = friendUsername;
+                const panel = document.getElementById('friend-progress-panel');
+
+                const res = await fetch(`/api/friends/progress/${encodeURIComponent(friendUsername)}?date=${encodeURIComponent(selectedDate)}`);
+                if (!res.ok) {
+                    closeFriendProgress();
+                    return;
+                }
+                const data = await res.json();
+
+                document.getElementById('friend-prog-title').innerText = `${data.username}'s Progress`;
+                document.getElementById('friend-goal-kcal').innerText = data.daily_goal;
+
+                let totalKcal = 0, totalP = 0, totalC = 0, totalF = 0, totalFib = 0;
+                data.meals.forEach(m => {
+                    totalKcal += m.calories;
+                    totalP += m.protein || 0;
+                    totalC += m.carbs || 0;
+                    totalF += m.fat || 0;
+                    totalFib += m.fiber || 0;
+                });
+
+                document.getElementById('friend-total-kcal').innerText = totalKcal;
+                const diff = data.daily_goal - totalKcal;
+                const badge = document.getElementById('friend-kcal-badge');
+                const bar = document.getElementById('friend-progress-bar');
+
+                if (diff >= 0) {
+                    badge.innerText = `${diff} kcal left`;
+                    badge.className = 'inline-block text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700';
+                    bar.className = 'bg-indigo-600 h-full transition-all duration-300';
+                } else {
+                    badge.innerText = `${Math.abs(diff)} kcal over`;
+                    badge.className = 'inline-block text-xs font-bold px-3 py-1 rounded-full bg-red-50 text-red-600';
+                    bar.className = 'bg-red-500 h-full transition-all duration-300';
+                }
+                bar.style.width = `${Math.min((totalKcal / (data.daily_goal || 1)) * 100, 100)}%`;
+
+                const mt = data.macro_targets;
+                document.getElementById('friend-p-val').innerText = totalP.toFixed(1);
+                document.getElementById('friend-p-target').innerText = mt.protein;
+                document.getElementById('friend-p-bar').style.width = `${Math.min((totalP / (mt.protein || 1)) * 100, 100)}%`;
+
+                document.getElementById('friend-c-val').innerText = totalC.toFixed(1);
+                document.getElementById('friend-c-target').innerText = mt.carbs;
+                document.getElementById('friend-c-bar').style.width = `${Math.min((totalC / (mt.carbs || 1)) * 100, 100)}%`;
+
+                document.getElementById('friend-f-val').innerText = totalF.toFixed(1);
+                document.getElementById('friend-f-target').innerText = mt.fat;
+                document.getElementById('friend-f-bar').style.width = `${Math.min((totalF / (mt.fat || 1)) * 100, 100)}%`;
+
+                document.getElementById('friend-fib-val').innerText = totalFib.toFixed(1);
+                document.getElementById('friend-fib-target').innerText = mt.fiber;
+                document.getElementById('friend-fib-bar').style.width = `${Math.min((totalFib / (mt.fiber || 1)) * 100, 100)}%`;
+
+                // Render read-only meals grouped by Breakfast, Lunch, Dinner, Snack
+                const sectionsEl = document.getElementById('friend-meals-sections');
+                sectionsEl.innerHTML = MEAL_CATEGORIES.map(cat => {
+                    const items = data.meals.filter(m => m.meal_type === cat.key);
+                    const catKcal = items.reduce((s, it) => s + it.calories, 0);
+                    const itemsHtml = items.length > 0
+                        ? `<div class="space-y-1.5 mt-2 pt-2 border-t border-gray-200/70">
+                            ${items.map(it => `
+                                <div class="flex justify-between items-center bg-white px-2.5 py-2 rounded-lg border border-gray-100 text-xs">
+                                    <span class="font-medium text-gray-800 truncate pr-2">${it.name}</span>
+                                    <span class="font-bold text-indigo-600 shrink-0">${it.calories} kcal</span>
+                                </div>
+                            `).join('')}
+                           </div>`
+                        : '';
+
+                    return `
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-xs text-gray-700">${cat.label}</span>
+                            <span class="text-xs font-semibold text-gray-500">${catKcal} kcal</span>
+                        </div>
+                        ${itemsHtml}
+                    </div>`;
+                }).join('');
+
+                panel.classList.remove('hidden');
+                loadFriendsList();
+                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            function closeFriendProgress() {
+                selectedFriendUsername = null;
+                document.getElementById('friend-progress-panel').classList.add('hidden');
+                loadFriendsList();
+            }
+
+            // ==================== PROFILE & WEIGHT LOGIC ====================
             async function loadProfileDetails() {
                 const res = await fetch('/api/profile');
                 const prof = await res.json();
@@ -752,7 +1164,6 @@
                 }
             }
 
-            // Weight Log Functions
             async function loadWeightHistory() {
                 const res = await fetch('/api/weight');
                 const entries = await res.json();
@@ -839,7 +1250,7 @@
                 loadWeightHistory();
             }
 
-            // Custom Interactive Calendar (DD/MM/YYYY European Display)
+            // ==================== CALENDAR & DATE LOGIC ====================
             async function fetchLoggedDates() {
                 try {
                     const res = await fetch('/api/logged_dates');
@@ -960,12 +1371,23 @@
                 gridEl.innerHTML = cellsHtml;
             }
 
+            function refreshActiveDateViews() {
+                updateDateUI();
+                if (currentActiveTab === 'friends') {
+                    loadFriendsList();
+                    if (selectedFriendUsername) {
+                        viewFriendProgress(selectedFriendUsername);
+                    }
+                } else {
+                    loadMeals();
+                }
+            }
+
             function selectCalendarDate(isoDate) {
                 if (isoDate > todayStr) return;
                 selectedDate = isoDate;
                 document.getElementById('calendar-popover').classList.add('hidden');
-                updateDateUI();
-                loadMeals();
+                refreshActiveDateViews();
             }
 
             function jumpToToday() {
@@ -985,8 +1407,7 @@
                 if (nextStr > todayStr) return;
                 selectedDate = nextStr;
                 document.getElementById('calendar-popover').classList.add('hidden');
-                updateDateUI();
-                loadMeals();
+                refreshActiveDateViews();
             }
 
             document.addEventListener('click', function(e) {
@@ -996,6 +1417,7 @@
                 }
             });
 
+            // ==================== FOOD SEARCH & LOGGING LOGIC ====================
             function extractWeightInfo(portionStr) {
                 const regex = /(~?\s*)(\d+(?:\.\d+)?)\s*(g|ml)\b/i;
                 const match = portionStr.match(regex);
@@ -1195,8 +1617,8 @@
             }
 
             document.addEventListener('click', function(e) {
-                const container = document.getElementById('food-name').parentElement.parentElement;
-                if (!container.contains(e.target)) {
+                const container = document.getElementById('food-command-box');
+                if (container && !container.contains(e.target)) {
                     document.getElementById('suggestions-box').classList.add('hidden');
                 }
             });
@@ -1216,6 +1638,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         date: selectedDate,
+                        meal_type: activeMealType,
                         food: selectedFood.name,
                         calories: totalCalories,
                         protein: parseFloat((selectedFood.protein * multiplier).toFixed(1)),
@@ -1236,7 +1659,7 @@
                     })
                 });
 
-                resetSelection();
+                closeCommandBox();
                 loadMeals();
             }
 
@@ -1268,12 +1691,52 @@
                 loadMeals();
             }
 
+            function renderSingleMealItem(item) {
+                let rightControl = '';
+                if (item.can_edit) {
+                    if (item.measure_mode === 'weight') {
+                        rightControl = `
+                        <div class="w-24 h-8 flex items-center justify-between bg-white border border-gray-200 rounded-lg px-2">
+                            <input type="number" step="1" min="1" inputmode="numeric" value="${item.custom_weight}" 
+                                onchange="updateMealWeight(${item.id}, this.value)"
+                                class="w-12 text-center text-xs font-bold text-gray-700 focus:outline-none">
+                            <span class="text-[11px] font-semibold text-gray-400">${item.weight_unit}</span>
+                        </div>`;
+                    } else {
+                        const pVal = Math.round(item.portions);
+                        rightControl = `
+                        <div class="w-24 h-8 flex items-center justify-between bg-white border border-gray-200 rounded-lg px-1.5 select-none">
+                            <button onclick="updateMealPortions(${item.id}, ${pVal - 1})" 
+                                ${pVal <= 1 ? 'disabled' : ''}
+                                class="w-6 h-6 flex items-center justify-center rounded text-gray-500 hover:text-indigo-600 disabled:opacity-30 font-bold text-xs">−</button>
+                            <span class="text-center text-xs font-bold text-gray-700">${pVal}</span>
+                            <button onclick="updateMealPortions(${item.id}, ${pVal + 1})" 
+                                class="w-6 h-6 flex items-center justify-center rounded text-gray-500 hover:text-indigo-600 font-bold text-xs">+</button>
+                        </div>`;
+                    }
+                }
+
+                return `
+                <div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-gray-100">
+                    <div class="pr-2 flex-1 min-w-0">
+                        <p class="font-medium text-sm text-gray-800 truncate">${item.name}</p>
+                        <p class="text-xs text-indigo-600 font-semibold">${item.calories} kcal</p>
+                        <p class="text-[11px] text-gray-400 mt-0.5">P: ${item.protein}g • C: ${item.carbs}g • F: ${item.fat}g • Fib: ${item.fiber}g</p>
+                    </div>
+                    <div class="flex items-center space-x-2 shrink-0">
+                        ${rightControl}
+                        <button onclick="deleteFood(${item.id})" class="text-red-400 hover:text-red-600 text-xs font-bold px-1.5 py-1">✕</button>
+                    </div>
+                </div>`;
+            }
+
             async function loadMeals() {
                 const response = await fetch(`/api/meals?date=${encodeURIComponent(selectedDate)}`);
                 const userItems = await response.json();
 
-                const listContainer = document.getElementById('food-list');
+                const sectionsContainer = document.getElementById('meal-sections-container');
                 const totalElement = document.getElementById('total-calories');
+                const remainingBadge = document.getElementById('calories-remaining-badge');
                 const progressBar = document.getElementById('progress-bar');
 
                 let totalKcal = 0, totalP = 0, totalC = 0, totalF = 0, totalFib = 0;
@@ -1291,61 +1754,53 @@
                 document.getElementById('total-fat').innerText = totalF.toFixed(1);
                 document.getElementById('total-fiber').innerText = totalFib.toFixed(1);
 
-                // Update Calorie & Individual Macro Progress Bars
-                progressBar.style.width = `${Math.min((totalKcal / dailyGoal) * 100, 100)}%`;
+                const diffKcal = dailyGoal - totalKcal;
+                if (diffKcal >= 0) {
+                    remainingBadge.innerText = `${diffKcal} kcal left`;
+                    remainingBadge.className = 'inline-block text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700';
+                    progressBar.className = 'bg-indigo-600 h-full transition-all duration-300';
+                } else {
+                    remainingBadge.innerText = `${Math.abs(diffKcal)} kcal over`;
+                    remainingBadge.className = 'inline-block text-xs font-bold px-3 py-1 rounded-full bg-red-50 text-red-600';
+                    progressBar.className = 'bg-red-500 h-full transition-all duration-300';
+                }
+
+                progressBar.style.width = `${Math.min((totalKcal / (dailyGoal || 1)) * 100, 100)}%`;
                 document.getElementById('bar-protein').style.width = `${Math.min((totalP / (macroTargets.protein || 1)) * 100, 100)}%`;
                 document.getElementById('bar-carbs').style.width = `${Math.min((totalC / (macroTargets.carbs || 1)) * 100, 100)}%`;
                 document.getElementById('bar-fat').style.width = `${Math.min((totalF / (macroTargets.fat || 1)) * 100, 100)}%`;
                 document.getElementById('bar-fiber').style.width = `${Math.min((totalFib / (macroTargets.fiber || 1)) * 100, 100)}%`;
 
-                if (userItems.length === 0) {
-                    listContainer.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">No food logged for this day.</p>';
-                    return;
-                }
+                sectionsContainer.innerHTML = MEAL_CATEGORIES.map(cat => {
+                    const catItems = userItems.filter(it => (it.meal_type || 'breakfast') === cat.key);
+                    const catKcal = catItems.reduce((sum, it) => sum + it.calories, 0);
 
-                listContainer.innerHTML = userItems.map(item => {
-                    let rightControl = '';
-                    if (item.can_edit) {
-                        if (item.measure_mode === 'weight') {
-                            rightControl = `
-                            <div class="w-24 h-8 flex items-center justify-between bg-white border border-gray-200 rounded-lg px-2">
-                                <input type="number" step="1" min="1" inputmode="numeric" value="${item.custom_weight}" 
-                                    onchange="updateMealWeight(${item.id}, this.value)"
-                                    class="w-12 text-center text-xs font-bold text-gray-700 focus:outline-none">
-                                <span class="text-[11px] font-semibold text-gray-400">${item.weight_unit}</span>
-                            </div>`;
-                        } else {
-                            const pVal = Math.round(item.portions);
-                            rightControl = `
-                            <div class="w-24 h-8 flex items-center justify-between bg-white border border-gray-200 rounded-lg px-1.5 select-none">
-                                <button onclick="updateMealPortions(${item.id}, ${pVal - 1})" 
-                                    ${pVal <= 1 ? 'disabled' : ''}
-                                    class="w-6 h-6 flex items-center justify-center rounded text-gray-500 hover:text-indigo-600 disabled:opacity-30 font-bold text-xs">−</button>
-                                <span class="text-center text-xs font-bold text-gray-700">${pVal}</span>
-                                <button onclick="updateMealPortions(${item.id}, ${pVal + 1})" 
-                                    class="w-6 h-6 flex items-center justify-center rounded text-gray-500 hover:text-indigo-600 font-bold text-xs">+</button>
-                            </div>`;
-                        }
-                    }
+                    const itemsHtml = catItems.length > 0
+                        ? `<div class="space-y-2 mt-2.5 pt-2.5 border-t border-gray-200/70">${catItems.map(renderSingleMealItem).join('')}</div>`
+                        : '';
 
                     return `
-                    <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
-                        <div class="pr-2 flex-1 min-w-0">
-                            <p class="font-medium text-sm text-gray-800 truncate">${item.name}</p>
-                            <p class="text-xs text-indigo-600 font-semibold">${item.calories} kcal</p>
-                            <p class="text-[11px] text-gray-400 mt-0.5">P: ${item.protein}g • C: ${item.carbs}g • F: ${item.fat}g • Fib: ${item.fiber}g</p>
+                    <div class="bg-gray-50/90 p-3.5 rounded-2xl border border-gray-100">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-sm text-gray-800">${cat.label}</h4>
+                                <p class="text-[11px] text-gray-400 font-medium">${catKcal} kcal</p>
+                            </div>
+                            <button type="button" onclick="openCommandBox('${cat.key}')"
+                                title="Add food to ${cat.label}"
+                                class="w-8 h-8 flex items-center justify-center rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg shadow-xs transition">
+                                +
+                            </button>
                         </div>
-                        <div class="flex items-center space-x-2 shrink-0">
-                            ${rightControl}
-                            <button onclick="deleteFood(${item.id})" class="text-red-400 hover:text-red-600 text-xs font-bold px-1.5 py-1">✕</button>
-                        </div>
+                        ${itemsHtml}
                     </div>`;
                 }).join('');
             }
 
-            // Initialize UI with today's date
+            // Initialize UI
             updateDateUI();
             loadMeals();
+            loadFriendsList();
         </script>
         {% endif %}
 

@@ -18,6 +18,8 @@ load_dotenv(override=True)
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
+VALID_MEAL_TYPES = {'breakfast', 'lunch', 'dinner', 'snack'}
+
 # 1. Database initialization + automatic migration
 def init_db():
     conn = sqlite3.connect('calories.db')
@@ -57,6 +59,7 @@ def init_db():
             measure_mode TEXT NOT NULL DEFAULT 'serving',
             custom_weight REAL NOT NULL DEFAULT 0,
             weight_unit TEXT NOT NULL DEFAULT 'g',
+            meal_type TEXT NOT NULL DEFAULT 'breakfast',
             data TEXT NOT NULL
         )
     ''')
@@ -81,6 +84,16 @@ def init_db():
             weight_kg REAL NOT NULL,
             data TEXT NOT NULL,
             UNIQUE(user, data)
+        )
+    ''')
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS friendships (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_from TEXT NOT NULL,
+            user_to TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            UNIQUE(user_from, user_to)
         )
     ''')
 
@@ -114,7 +127,8 @@ def init_db():
         'base_portion': "TEXT NOT NULL DEFAULT '1 serving'",
         'measure_mode': "TEXT NOT NULL DEFAULT 'serving'",
         'custom_weight': 'REAL NOT NULL DEFAULT 0',
-        'weight_unit': "TEXT NOT NULL DEFAULT 'g'"
+        'weight_unit': "TEXT NOT NULL DEFAULT 'g'",
+        'meal_type': "TEXT NOT NULL DEFAULT 'breakfast'"
     }
     for col, col_type in new_meal_cols.items():
         if col not in meal_cols:
@@ -151,23 +165,16 @@ init_db()
 
 # Helper: Compute clean daily macro targets based on calorie goal & latest weight
 def compute_macro_targets(daily_goal, weight_kg=None):
-    # Protein: ~1.8g/kg if weight is known (capped safely), otherwise 25% of calories
     if weight_kg and weight_kg > 0:
         protein_g = int(round((weight_kg * 1.8) / 5.0) * 5)
-        # Ensure protein doesn't exceed 40% of total kcal
         max_prot = int((daily_goal * 0.40) / 4)
         protein_g = min(protein_g, max_prot)
     else:
         protein_g = int(round(((daily_goal * 0.25) / 4.0) / 5.0) * 5)
 
-    # Fat: ~25% of calories (9 kcal/g), rounded to nearest 5g
     fat_g = int(round(((daily_goal * 0.25) / 9.0) / 5.0) * 5)
-
-    # Carbs: remaining calories (4 kcal/g), rounded to nearest 5g
     remaining_kcal = max(0, daily_goal - (protein_g * 4) - (fat_g * 9))
     carbs_g = int(round((remaining_kcal / 4.0) / 5.0) * 5)
-
-    # Fiber: standard ~14g per 1000 kcal
     fiber_g = max(20, int(round((daily_goal / 1000.0) * 14)))
 
     return {
@@ -349,7 +356,7 @@ def search_aliment():
 
     return jsonify(final_results)
 
-# 5. Add meal for the selected date
+# 5. Add meal for the selected date & meal category
 @app.route('/api/add', methods=['POST'])
 def add_meal():
     if 'username' not in session:
@@ -358,6 +365,9 @@ def add_meal():
     data = request.json
     target_date = data.get('date') or str(date.today())
     current_user = session['username']
+    meal_type = (data.get('meal_type') or 'breakfast').strip().lower()
+    if meal_type not in VALID_MEAL_TYPES:
+        meal_type = 'breakfast'
     
     conn = sqlite3.connect('calories.db')
     c = conn.cursor()
@@ -366,8 +376,8 @@ def add_meal():
         '''INSERT INTO meals (
                user, aliment, calories, protein, fat, carbs, fiber,
                portions, unit_kcal, unit_protein, unit_fat, unit_carbs, unit_fiber,
-               base_name, base_portion, measure_mode, custom_weight, weight_unit, data
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+               base_name, base_portion, measure_mode, custom_weight, weight_unit, meal_type, data
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
         (
             current_user,
             data['food'],
@@ -387,6 +397,7 @@ def add_meal():
             data.get('measure_mode', 'serving'),
             data.get('custom_weight', 0),
             data.get('weight_unit', 'g'),
+            meal_type,
             target_date
         )
     )
@@ -489,8 +500,8 @@ def get_meals():
     c = conn.cursor()
     c.execute(
         '''SELECT id, aliment, calories, protein, fat, carbs, fiber, portions, unit_kcal, 
-                  base_name, measure_mode, custom_weight, weight_unit 
-           FROM meals WHERE user = ? AND data = ? ORDER BY id DESC''',
+                  base_name, measure_mode, custom_weight, weight_unit, meal_type 
+           FROM meals WHERE user = ? AND data = ? ORDER BY id ASC''',
         (current_user, target_date)
     )
     lines = c.fetchall()
@@ -499,6 +510,9 @@ def get_meals():
     meals_list = []
     for l in lines:
         clean_name = l[9] if l[9] else re.sub(r'\s*\(.*?\)\s*$', '', l[1]).strip()
+        m_type = (l[13] or 'breakfast').lower()
+        if m_type not in VALID_MEAL_TYPES:
+            m_type = 'breakfast'
         meals_list.append({
             'id': l[0],
             'name': clean_name,
@@ -511,7 +525,8 @@ def get_meals():
             'can_edit': l[8] > 0,
             'measure_mode': l[10] or 'serving',
             'custom_weight': int(l[11]) if l[11] == int(l[11]) else l[11],
-            'weight_unit': l[12] or 'g'
+            'weight_unit': l[12] or 'g',
+            'meal_type': m_type
         })
     return jsonify(meals_list)
 
@@ -748,7 +763,6 @@ def ai_calorie_recommendation():
             'message': f"Please save your {', '.join(missing)} first so AI can calculate your personalized calorie needs."
         }), 400
 
-    # 1. Exact Mifflin-St Jeor BMR
     base_bmr = (10.0 * latest_weight) + (6.25 * height_cm) - (5.0 * age)
     if gender == 'male':
         bmr = base_bmr + 5.0
@@ -757,7 +771,6 @@ def ai_calorie_recommendation():
     else:
         bmr = base_bmr - 78.0
 
-    # 2. Standard Activity Multipliers
     multipliers = {
         'sedentary': 1.2,
         'light': 1.375,
@@ -767,7 +780,6 @@ def ai_calorie_recommendation():
     mult = multipliers.get(activity_level, 1.375)
     raw_tdee = bmr * mult
 
-    # 3. Clean rounding to nearest 50 kcal (e.g., 2800.53 -> 2800)
     maintenance_kcal = int(round(raw_tdee / 50.0) * 50)
     weight_loss_kcal = max(1200, maintenance_kcal - 500)
     muscle_gain_kcal = maintenance_kcal + 300
@@ -813,6 +825,186 @@ def ai_calorie_recommendation():
         'macros_maint': compute_macro_targets(maintenance_kcal, latest_weight),
         'macros_gain': compute_macro_targets(muscle_gain_kcal, latest_weight),
         'advice': advice_text
+    })
+
+# 11. Mutual Friends & Progress Sharing Routes
+@app.route('/api/friends', methods=['GET'])
+def list_friends():
+    if 'username' not in session:
+        return jsonify({}), 401
+
+    me = session['username']
+    target_date = request.args.get('date') or str(date.today())
+
+    conn = sqlite3.connect('calories.db')
+    c = conn.cursor()
+
+    # Users I added
+    c.execute('SELECT user_to FROM friendships WHERE user_from = ?', (me,))
+    added_by_me = {r[0] for r in c.fetchall()}
+
+    # Users who added me
+    c.execute('SELECT user_from FROM friendships WHERE user_to = ?', (me,))
+    added_me = {r[0] for r in c.fetchall()}
+
+    mutual_usernames = sorted(added_by_me & added_me)
+    outgoing_pending = sorted(added_by_me - added_me)
+    incoming_requests = sorted(added_me - added_by_me)
+
+    mutual_list = []
+    for friend in mutual_usernames:
+        c.execute('SELECT daily_goal FROM users WHERE username = ?', (friend,))
+        u_row = c.fetchone()
+        f_goal = u_row[0] if u_row else 2000
+
+        c.execute(
+            'SELECT COALESCE(SUM(calories), 0), COALESCE(SUM(protein), 0) FROM meals WHERE user = ? AND data = ?',
+            (friend, target_date)
+        )
+        sum_row = c.fetchone()
+        f_kcal = int(sum_row[0] or 0)
+        f_prot = round(float(sum_row[1] or 0), 1)
+
+        mutual_list.append({
+            'username': friend,
+            'daily_goal': f_goal,
+            'calories': f_kcal,
+            'protein': f_prot
+        })
+
+    conn.close()
+    return jsonify({
+        'mutual': mutual_list,
+        'outgoing': outgoing_pending,
+        'incoming': incoming_requests
+    })
+
+@app.route('/api/friends/add', methods=['POST'])
+def add_friend():
+    if 'username' not in session:
+        return jsonify({'status': 'unauthorized'}), 401
+
+    me = session['username']
+    data = request.json
+    target = (data.get('username') or '').strip().lower()
+
+    if not target:
+        return jsonify({'status': 'error', 'message': 'Please enter a username.'}), 400
+    if target == me:
+        return jsonify({'status': 'error', 'message': 'You cannot add yourself as a friend.'}), 400
+
+    conn = sqlite3.connect('calories.db')
+    c = conn.cursor()
+
+    c.execute('SELECT username FROM users WHERE username = ?', (target,))
+    if not c.fetchone():
+        conn.close()
+        return jsonify({'status': 'error', 'message': f'User "{target}" does not exist.'}), 404
+
+    c.execute(
+        'INSERT OR IGNORE INTO friendships (user_from, user_to, created_at) VALUES (?, ?, ?)',
+        (me, target, datetime.now().isoformat())
+    )
+
+    c.execute('SELECT 1 FROM friendships WHERE user_from = ? AND user_to = ?', (target, me))
+    is_mutual = c.fetchone() is not None
+
+    conn.commit()
+    conn.close()
+
+    if is_mutual:
+        return jsonify({
+            'status': 'succes',
+            'mutual': True,
+            'message': f'You and {target} are now mutual friends! You can view their progress.'
+        })
+    return jsonify({
+        'status': 'succes',
+        'mutual': False,
+        'message': f'Friend request sent to {target}. Progress unlocks once they add you back.'
+    })
+
+@app.route('/api/friends/remove', methods=['POST'])
+def remove_friend():
+    if 'username' not in session:
+        return jsonify({'status': 'unauthorized'}), 401
+
+    me = session['username']
+    data = request.json
+    target = (data.get('username') or '').strip().lower()
+
+    conn = sqlite3.connect('calories.db')
+    c = conn.cursor()
+    c.execute('DELETE FROM friendships WHERE user_from = ? AND user_to = ?', (me, target))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'removed'})
+
+@app.route('/api/friends/progress/<friend_username>', methods=['GET'])
+def get_friend_progress(friend_username):
+    if 'username' not in session:
+        return jsonify({'status': 'unauthorized'}), 401
+
+    me = session['username']
+    friend = friend_username.strip().lower()
+    target_date = request.args.get('date') or str(date.today())
+
+    conn = sqlite3.connect('calories.db')
+    c = conn.cursor()
+
+    # Verify strict mutual friendship
+    c.execute('SELECT 1 FROM friendships WHERE user_from = ? AND user_to = ?', (me, friend))
+    i_added = c.fetchone() is not None
+    c.execute('SELECT 1 FROM friendships WHERE user_from = ? AND user_to = ?', (friend, me))
+    they_added = c.fetchone() is not None
+
+    if not (i_added and they_added):
+        conn.close()
+        return jsonify({'status': 'forbidden', 'message': 'Mutual friendship is required to view progress.'}), 403
+
+    c.execute('SELECT daily_goal FROM users WHERE username = ?', (friend,))
+    u_row = c.fetchone()
+    if not u_row:
+        conn.close()
+        return jsonify({'status': 'not_found'}), 404
+
+    f_goal = u_row[0]
+    f_weight = get_user_latest_weight(c, friend)
+    f_macro_targets = compute_macro_targets(f_goal, f_weight)
+
+    c.execute(
+        '''SELECT id, aliment, calories, protein, fat, carbs, fiber, portions, base_name, meal_type
+           FROM meals WHERE user = ? AND data = ? ORDER BY id ASC''',
+        (friend, target_date)
+    )
+    rows = c.fetchall()
+    conn.close()
+
+    meals_list = []
+    for r in rows:
+        clean_name = r[8] if r[8] else re.sub(r'\s*\(.*?\)\s*$', '', r[1]).strip()
+        m_type = (r[9] or 'breakfast').lower()
+        if m_type not in VALID_MEAL_TYPES:
+            m_type = 'breakfast'
+        meals_list.append({
+            'id': r[0],
+            'name': clean_name,
+            'calories': r[2],
+            'protein': round(r[3], 1),
+            'fat': round(r[4], 1),
+            'carbs': round(r[5], 1),
+            'fiber': round(r[6], 1),
+            'portions': r[7],
+            'meal_type': m_type
+        })
+
+    return jsonify({
+        'status': 'succes',
+        'username': friend,
+        'date': target_date,
+        'daily_goal': f_goal,
+        'macro_targets': f_macro_targets,
+        'meals': meals_list
     })
 
 if __name__ == '__main__':
