@@ -34,7 +34,9 @@ def init_db():
             height_cm REAL DEFAULT NULL,
             birth_date TEXT DEFAULT NULL,
             gender TEXT DEFAULT 'unspecified',
-            activity_level TEXT DEFAULT 'moderate'
+            activity_level TEXT DEFAULT 'moderate',
+            theme_mode TEXT NOT NULL DEFAULT 'light',
+            accent_color TEXT NOT NULL DEFAULT '#4f46e5'
         )
     ''')
     
@@ -104,7 +106,9 @@ def init_db():
         'height_cm': 'REAL DEFAULT NULL',
         'birth_date': 'TEXT DEFAULT NULL',
         'gender': "TEXT DEFAULT 'unspecified'",
-        'activity_level': "TEXT DEFAULT 'moderate'"
+        'activity_level': "TEXT DEFAULT 'moderate'",
+        'theme_mode': "TEXT NOT NULL DEFAULT 'light'",
+        'accent_color': "TEXT NOT NULL DEFAULT '#4f46e5'"
     }
     for col, col_type in new_user_cols.items():
         if col not in user_cols:
@@ -198,9 +202,14 @@ def acasa():
     if 'username' in session:
         conn = sqlite3.connect('calories.db')
         c = conn.cursor()
-        c.execute('SELECT daily_goal FROM users WHERE username = ?', (session['username'],))
+        c.execute(
+            'SELECT daily_goal, theme_mode, accent_color FROM users WHERE username = ?',
+            (session['username'],)
+        )
         row = c.fetchone()
         goal = row[0] if row else session.get('daily_goal', 2000)
+        theme_mode = (row[1] if row and row[1] in ('light', 'dark') else 'light')
+        accent_color = (row[2] if row and row[2] else '#4f46e5')
         latest_w = get_user_latest_weight(c, session['username'])
         conn.close()
 
@@ -212,14 +221,18 @@ def acasa():
             logged_in=True,
             username=session['username'],
             daily_goal=goal,
-            macro_targets=macros
+            macro_targets=macros,
+            theme_mode=theme_mode,
+            accent_color=accent_color
         )
     return render_template(
         'index.html',
         logged_in=False,
         username='',
         daily_goal=2000,
-        macro_targets={'protein': 125, 'carbs': 250, 'fat': 55, 'fiber': 28}
+        macro_targets={'protein': 125, 'carbs': 250, 'fat': 55, 'fiber': 28},
+        theme_mode='light',
+        accent_color='#4f46e5'
     )
 
 # 3. Auth routes
@@ -229,6 +242,9 @@ def register():
     username = data.get('username', '').strip().lower()
     password = data.get('password', '').strip()
     daily_goal = int(data.get('daily_goal') or 2000)
+    theme_mode = data.get('theme_mode', 'light')
+    if theme_mode not in ('light', 'dark'):
+        theme_mode = 'light'
 
     if len(username) < 3 or len(password) < 4:
         return jsonify({'status': 'error', 'message': 'Username must be at least 3 characters and password at least 4.'}), 400
@@ -237,7 +253,10 @@ def register():
     c = conn.cursor()
     try:
         pw_hash = generate_password_hash(password)
-        c.execute('INSERT INTO users (username, password_hash, daily_goal) VALUES (?, ?, ?)', (username, pw_hash, daily_goal))
+        c.execute(
+            'INSERT INTO users (username, password_hash, daily_goal, theme_mode, accent_color) VALUES (?, ?, ?, ?, ?)',
+            (username, pw_hash, daily_goal, theme_mode, '#4f46e5')
+        )
         conn.commit()
     except sqlite3.IntegrityError:
         conn.close()
@@ -254,15 +273,22 @@ def login():
     data = request.json
     username = data.get('username', '').strip().lower()
     password = data.get('password', '').strip()
+    theme_mode = (data.get('theme_mode') or '').strip().lower()
 
     conn = sqlite3.connect('calories.db')
     c = conn.cursor()
     c.execute('SELECT password_hash, daily_goal FROM users WHERE username = ?', (username,))
     row = c.fetchone()
-    conn.close()
 
     if not row or not check_password_hash(row[0], password):
+        conn.close()
         return jsonify({'status': 'error', 'message': 'Invalid username or password.'}), 401
+
+    if theme_mode in ('light', 'dark'):
+        c.execute('UPDATE users SET theme_mode = ? WHERE username = ?', (theme_mode, username))
+        conn.commit()
+
+    conn.close()
 
     session.permanent = True
     session['username'] = username
@@ -273,6 +299,36 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for('acasa'))
+
+# Save account appearance settings (theme_mode + accent_color)
+@app.route('/api/settings', methods=['POST'])
+def update_user_settings():
+    if 'username' not in session:
+        return jsonify({'status': 'unauthorized'}), 401
+
+    data = request.json or {}
+    theme_mode = (data.get('theme_mode') or 'light').strip().lower()
+    accent_color = (data.get('accent_color') or '#4f46e5').strip().lower()
+
+    if theme_mode not in ('light', 'dark'):
+        theme_mode = 'light'
+    if not re.match(r'^#[0-9a-f]{6}$', accent_color):
+        accent_color = '#4f46e5'
+
+    conn = sqlite3.connect('calories.db')
+    c = conn.cursor()
+    c.execute(
+        'UPDATE users SET theme_mode = ?, accent_color = ? WHERE username = ?',
+        (theme_mode, accent_color, session['username'])
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        'status': 'succes',
+        'theme_mode': theme_mode,
+        'accent_color': accent_color
+    })
 
 # 4. Hybrid Search
 class FoodSuggestion(BaseModel):

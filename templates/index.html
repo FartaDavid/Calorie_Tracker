@@ -10,14 +10,135 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/static/icon.png">
     <link rel="icon" type="image/png" href="/static/icon.png">
     <meta name="apple-mobile-web-app-title" content="Calories">
+    <style>
+        :root {
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --accent-soft: rgba(79, 70, 229, 0.10);
+            --accent-border: rgba(79, 70, 229, 0.25);
+        }
+
+        /* Dynamic Accent Overrides */
+        .text-indigo-600, .text-indigo-700, .text-indigo-800 {
+            color: var(--accent) !important;
+        }
+        .bg-indigo-600 {
+            background-color: var(--accent) !important;
+        }
+        .hover\:bg-indigo-700:hover, .hover\:bg-indigo-600:hover {
+            background-color: var(--accent-hover) !important;
+        }
+        .bg-indigo-50, .bg-indigo-50\/60, .bg-indigo-50\/70, .bg-indigo-100 {
+            background-color: var(--accent-soft) !important;
+        }
+        .hover\:bg-indigo-50:hover, .hover\:bg-indigo-100:hover {
+            background-color: var(--accent-soft) !important;
+        }
+        .border-indigo-100, .border-indigo-200, .border-indigo-300, .hover\:border-indigo-200:hover {
+            border-color: var(--accent-border) !important;
+        }
+        .focus\:ring-indigo-500:focus {
+            --tw-ring-color: var(--accent) !important;
+        }
+        .hover\:text-indigo-600:hover {
+            color: var(--accent) !important;
+        }
+
+        /* Dark Mode Global Styles */
+        body.dark-mode {
+            background-color: #0f172a !important;
+            color: #f1f5f9 !important;
+        }
+        body.dark-mode .bg-white,
+        body.dark-mode .bg-white\/80,
+        body.dark-mode .bg-white\/90 {
+            background-color: #1e293b !important;
+        }
+        body.dark-mode .bg-gray-50,
+        body.dark-mode .bg-gray-50\/90 {
+            background-color: #0f172a !important;
+        }
+        body.dark-mode .bg-gray-100 {
+            background-color: #334155 !important;
+        }
+        body.dark-mode .bg-gray-200 {
+            background-color: #334155 !important;
+        }
+        body.dark-mode .hover\:bg-gray-100:hover,
+        body.dark-mode .hover\:bg-gray-200:hover,
+        body.dark-mode .hover\:bg-gray-300:hover {
+            background-color: #475569 !important;
+        }
+        body.dark-mode .border-gray-100,
+        body.dark-mode .border-gray-200,
+        body.dark-mode .border-gray-200\/70 {
+            border-color: #334155 !important;
+        }
+        body.dark-mode .divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
+            border-color: #334155 !important;
+        }
+        body.dark-mode .text-gray-800 {
+            color: #f8fafc !important;
+        }
+        body.dark-mode .text-gray-700 {
+            color: #e2e8f0 !important;
+        }
+        body.dark-mode .text-gray-600 {
+            color: #cbd5e1 !important;
+        }
+        body.dark-mode .text-gray-500 {
+            color: #94a3b8 !important;
+        }
+        body.dark-mode .text-gray-400 {
+            color: #64748b !important;
+        }
+        body.dark-mode input,
+        body.dark-mode select {
+            background-color: #0f172a !important;
+            color: #f8fafc !important;
+            border-color: #334155 !important;
+        }
+        body.dark-mode input:focus,
+        body.dark-mode select:focus {
+            background-color: #1e293b !important;
+        }
+        body.dark-mode .bg-blue-50\/80 {
+            background-color: rgba(30, 58, 138, 0.25) !important;
+            border-color: rgba(59, 130, 246, 0.3) !important;
+        }
+        body.dark-mode .bg-amber-50\/80 {
+            background-color: rgba(120, 53, 15, 0.25) !important;
+            border-color: rgba(245, 158, 11, 0.3) !important;
+        }
+        body.dark-mode .bg-rose-50\/80 {
+            background-color: rgba(136, 19, 55, 0.25) !important;
+            border-color: rgba(244, 63, 94, 0.3) !important;
+        }
+        body.dark-mode .bg-emerald-50\/80,
+        body.dark-mode .bg-emerald-50 {
+            background-color: rgba(6, 78, 59, 0.3) !important;
+            border-color: rgba(16, 185, 129, 0.3) !important;
+        }
+        body.dark-mode .bg-red-50 {
+            background-color: rgba(127, 29, 29, 0.35) !important;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans pb-12">
+<body class="bg-gray-50 text-gray-800 font-sans pb-12 transition-colors duration-200">
 
     <div class="max-w-md mx-auto p-4">
 
         {% if not logged_in %}
         <!-- LOGIN / REGISTER SCREEN -->
-        <header class="text-center my-8">
+        <div class="flex justify-end mt-2">
+            <button type="button" id="login-theme-toggle" onclick="toggleLoginTheme()"
+                class="text-xs bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 font-semibold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-2xs">
+                <span id="login-theme-icon">🌙</span>
+                <span id="login-theme-label">Dark Mode</span>
+            </button>
+        </div>
+
+        <header class="text-center my-6">
             <h1 class="text-3xl font-bold text-indigo-600">Calorie Tracker</h1>
             <p class="text-sm text-gray-500 mt-1">Sign in to access your personal nutrition log</p>
         </header>
@@ -58,6 +179,29 @@
         <script>
             let authMode = 'login';
 
+            function applyLoginThemeUI(mode) {
+                const isDark = mode === 'dark';
+                document.body.classList.toggle('dark-mode', isDark);
+                localStorage.setItem('tracker_theme_mode', mode);
+
+                const iconEl = document.getElementById('login-theme-icon');
+                const labelEl = document.getElementById('login-theme-label');
+                if (iconEl && labelEl) {
+                    iconEl.innerText = isDark ? '☀' : '🌙';
+                    labelEl.innerText = isDark ? 'Light Mode' : 'Dark Mode';
+                }
+            }
+
+            function toggleLoginTheme() {
+                const current = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+                applyLoginThemeUI(current === 'dark' ? 'light' : 'dark');
+            }
+
+            (function initLoginTheme() {
+                const savedTheme = localStorage.getItem('tracker_theme_mode') || 'light';
+                applyLoginThemeUI(savedTheme);
+            })();
+
             function toggleAuthMode(mode) {
                 authMode = mode;
                 const errorBox = document.getElementById('auth-error');
@@ -81,6 +225,7 @@
                 const username = document.getElementById('auth-username').value;
                 const password = document.getElementById('auth-password').value;
                 const daily_goal = document.getElementById('auth-goal').value;
+                const theme_mode = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
                 const errorBox = document.getElementById('auth-error');
 
                 const endpoint = authMode === 'login' ? '/api/login' : '/api/register';
@@ -88,7 +233,7 @@
                 const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password, daily_goal })
+                    body: JSON.stringify({ username, password, daily_goal, theme_mode })
                 });
 
                 const result = await response.json();
@@ -102,15 +247,21 @@
         </script>
 
         {% else %}
-        <!-- TOP HEADER + 3-TAB NAVIGATION (TRACKER / FRIENDS / PROFILE) -->
+        <!-- TOP HEADER + SETTINGS & LOG OUT BUTTONS -->
         <header class="flex justify-between items-center my-4">
             <div>
                 <h1 class="text-xl font-bold text-indigo-600">Calorie Tracker</h1>
                 <p class="text-xs text-gray-500">Hi, <span class="font-semibold text-gray-700 capitalize">{{ username }}</span>!</p>
             </div>
-            <a href="/logout" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-3 py-1.5 rounded-lg transition">
-                Log Out
-            </a>
+            <div class="flex items-center space-x-2">
+                <button type="button" id="header-settings-btn" onclick="toggleSettingsView()"
+                    class="text-xs bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-2xs">
+                    <span>⚙</span> Settings
+                </button>
+                <a href="/logout" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-3 py-1.5 rounded-lg transition">
+                    Log Out
+                </a>
+            </div>
         </header>
 
         <!-- Main Tab Switcher Bar -->
@@ -130,7 +281,7 @@
             </button>
         </nav>
 
-        <!-- SHARED DATE NAVIGATION BAR (Used for both Tracker & Viewing Friend's Progress) -->
+        <!-- SHARED DATE NAVIGATION BAR -->
         <div class="relative mb-4 select-none" id="date-nav-container">
             <div class="bg-white px-3 py-2 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                 <button type="button" onclick="changeDate(-1)" class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 font-bold text-base transition">
@@ -170,14 +321,13 @@
 
         <!-- ==================== VIEW 1: CALORIE & MACRO TRACKER ==================== -->
         <div id="tracker-view">
-            <!-- Daily Summary Card with kcal left / kcal over + Individual Macro Progress Bars -->
+            <!-- Daily Summary Card -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-5 text-center">
                 <h2 id="summary-heading" class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Today's Progress</h2>
                 <div class="text-4xl font-extrabold text-indigo-600 mt-2 mb-1">
                     <span id="total-calories">0</span> <span class="text-lg text-gray-400 font-normal">/ <span id="goal-display-text">{{ daily_goal }}</span> kcal</span>
                 </div>
 
-                <!-- Dynamic Kcal Left / Kcal Over Badge -->
                 <div class="mb-3">
                     <span id="calories-remaining-badge" class="inline-block text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700">
                         {{ daily_goal }} kcal left
@@ -188,7 +338,7 @@
                     <div id="progress-bar" class="bg-indigo-600 h-full transition-all duration-300" style="width: 0%"></div>
                 </div>
 
-                <!-- Macros Grid with Daily Targets & Live Progress Bars -->
+                <!-- Macros Grid -->
                 <div class="grid grid-cols-2 gap-2.5 pt-3 border-t border-gray-100 text-left">
                     <div class="bg-blue-50/80 p-2.5 rounded-xl border border-blue-100/70">
                         <div class="flex justify-between items-baseline">
@@ -240,22 +390,25 @@
                 </div>
             </div>
 
-            <!-- CHAT-STYLE COMMAND BOX (Hidden until '+' on a meal is clicked) -->
+            <!-- CHAT-STYLE COMMAND BOX -->
             <div id="food-command-box" class="hidden bg-white p-4 rounded-2xl shadow-md border-2 border-indigo-200 mb-5 relative transition-all">
                 <div class="flex items-center justify-between mb-2.5">
                     <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg">
                         Adding to: <span id="active-meal-label" class="capitalize">Breakfast</span>
                     </span>
-                    <button type="button" onclick="closeCommandBox()" class="text-xs text-gray-400 hover:text-gray-600 font-semibold px-2 py-0.5 rounded-lg hover:bg-gray-100">
+                    <button type="button" onclick="closeCommandBox()" class="text-xs text-gray-400 hover:text-gray-600 font-semibold px-2.5 py-1 rounded-lg hover:bg-gray-100">
                         Close ✕
                     </button>
                 </div>
 
                 <div class="relative flex items-center">
                     <input type="text" id="food-name" placeholder="Type what you ate (e.g. milk, 2 eggs, banana)..." oninput="handleSearch()" autocomplete="off"
-                        class="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-sm transition">
-                    <span id="loading-spinner" class="hidden absolute right-3.5 text-xs text-indigo-600 font-semibold animate-pulse">AI...</span>
-                    <button id="clear-search-btn" onclick="resetSelection()" class="hidden absolute right-3.5 text-gray-400 hover:text-gray-600 text-sm font-bold">✕</button>
+                        class="w-full pl-4 pr-20 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-sm transition">
+                    <span id="loading-spinner" class="hidden absolute right-11 text-xs text-indigo-600 font-semibold animate-pulse pointer-events-none">AI...</span>
+                    <button type="button" id="clear-search-btn" onclick="clearSearchInput()" title="Clear search"
+                        class="hidden absolute right-2 w-8 h-8 flex items-center justify-center rounded-xl bg-gray-200/80 hover:bg-gray-300 text-gray-600 hover:text-gray-800 text-sm font-bold transition">
+                        ✕
+                    </button>
                 </div>
 
                 <!-- AI Suggestions Dropdown -->
@@ -324,7 +477,7 @@
                 </div>
             </div>
 
-            <!-- Consumed Today Sections: Breakfast, Lunch, Dinner, Snack -->
+            <!-- Consumed Today Sections -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 <h3 id="list-heading" class="font-bold text-gray-700 mb-4">Consumed Today</h3>
                 <div id="meal-sections-container" class="space-y-4"></div>
@@ -349,7 +502,7 @@
                 </form>
             </div>
 
-            <!-- Incoming Friend Requests (People who added you) -->
+            <!-- Incoming Friend Requests -->
             <div id="incoming-friends-card" class="hidden bg-white p-5 rounded-2xl shadow-sm border border-indigo-100">
                 <h3 class="font-bold text-indigo-700 text-sm mb-3">Added You (Add Back to Connect)</h3>
                 <div id="incoming-friends-list" class="space-y-2"></div>
@@ -363,7 +516,7 @@
                 </div>
             </div>
 
-            <!-- Selected Friend's Progress Card (Shown when clicking a friend) -->
+            <!-- Selected Friend's Progress Card -->
             <div id="friend-progress-panel" class="hidden bg-white p-5 rounded-2xl shadow-md border-2 border-indigo-200 space-y-4">
                 <div class="flex items-center justify-between border-b border-gray-100 pb-3">
                     <div>
@@ -441,7 +594,7 @@
                     </div>
                 </div>
 
-                <!-- Friend's Consumed Meals Breakdown (Read-Only) -->
+                <!-- Friend's Consumed Meals Breakdown -->
                 <div id="friend-meals-sections" class="space-y-2.5 pt-2 border-t border-gray-100"></div>
             </div>
 
@@ -582,7 +735,7 @@
                 </div>
             </div>
 
-            <!-- Log Weight Form (European DD/MM/YYYY) -->
+            <!-- Log Weight Form -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 <h3 class="font-bold text-gray-700 mb-3">Log Body Weight</h3>
                 <div id="weight-error" class="hidden bg-red-50 text-red-600 text-xs p-2.5 rounded-xl mb-3 font-medium"></div>
@@ -617,7 +770,179 @@
             </div>
         </div>
 
+        <!-- ==================== VIEW 4: APPEARANCE & THEME SETTINGS ==================== -->
+        <div id="settings-view" class="hidden space-y-5">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="font-bold text-gray-800 text-base">Appearance Settings</h3>
+                        <p class="text-xs text-gray-400">Saved automatically to your account</p>
+                    </div>
+                    <button type="button" onclick="closeSettingsView()"
+                        class="text-xs bg-indigo-50 text-indigo-600 font-semibold px-3 py-1.5 rounded-xl hover:bg-indigo-100 transition">
+                        Done
+                    </button>
+                </div>
+
+                <!-- Dark Mode / Light Mode Switch -->
+                <div class="mb-5">
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-2">Theme Mode</label>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button type="button" id="theme-light-btn" onclick="setThemeMode('light')"
+                            class="py-3 px-4 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition">
+                            <span>☀</span> Light Mode
+                        </button>
+                        <button type="button" id="theme-dark-btn" onclick="setThemeMode('dark')"
+                            class="py-3 px-4 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition">
+                            <span>🌙</span> Dark Mode
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Accent Color Presets + Custom Picker -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Accent Color</label>
+                        <button type="button" onclick="setAccentColor('#4f46e5')" class="text-[11px] text-indigo-600 font-semibold hover:underline">
+                            Reset Default
+                        </button>
+                    </div>
+
+                    <!-- Default Presets -->
+                    <div class="grid grid-cols-6 gap-2 mb-4" id="accent-presets-grid">
+                        <button type="button" data-color="#4f46e5" onclick="setAccentColor('#4f46e5')" title="Indigo Blue (Default)"
+                            class="accent-swatch h-10 rounded-xl border-2 border-transparent transition transform hover:scale-105 shadow-xs"
+                            style="background-color: #4f46e5;"></button>
+                        <button type="button" data-color="#059669" onclick="setAccentColor('#059669')" title="Emerald"
+                            class="accent-swatch h-10 rounded-xl border-2 border-transparent transition transform hover:scale-105 shadow-xs"
+                            style="background-color: #059669;"></button>
+                        <button type="button" data-color="#e11d48" onclick="setAccentColor('#e11d48')" title="Rose"
+                            class="accent-swatch h-10 rounded-xl border-2 border-transparent transition transform hover:scale-105 shadow-xs"
+                            style="background-color: #e11d48;"></button>
+                        <button type="button" data-color="#d97706" onclick="setAccentColor('#d97706')" title="Amber"
+                            class="accent-swatch h-10 rounded-xl border-2 border-transparent transition transform hover:scale-105 shadow-xs"
+                            style="background-color: #d97706;"></button>
+                        <button type="button" data-color="#7c3aed" onclick="setAccentColor('#7c3aed')" title="Violet"
+                            class="accent-swatch h-10 rounded-xl border-2 border-transparent transition transform hover:scale-105 shadow-xs"
+                            style="background-color: #7c3aed;"></button>
+                        <button type="button" data-color="#0891b2" onclick="setAccentColor('#0891b2')" title="Cyan"
+                            class="accent-swatch h-10 rounded-xl border-2 border-transparent transition transform hover:scale-105 shadow-xs"
+                            style="background-color: #0891b2;"></button>
+                    </div>
+
+                    <!-- Custom Any-Color Picker -->
+                    <label class="flex items-center justify-between bg-gray-50 px-3.5 py-2.5 rounded-xl border border-gray-200 cursor-pointer hover:border-indigo-200 transition">
+                        <div>
+                            <p class="text-xs font-bold text-gray-700">Custom Color</p>
+                            <p id="custom-color-hex" class="text-[11px] text-gray-400 uppercase font-mono">#4F46E5</p>
+                        </div>
+                        <input type="color" id="custom-accent-picker" value="#4f46e5" oninput="setAccentColor(this.value)"
+                            class="w-9 h-9 rounded-lg border-0 cursor-pointer bg-transparent p-0">
+                    </label>
+                </div>
+            </div>
+        </div>
+
         <script>
+            // ==================== ACCOUNT-SYNCED THEME & ACCENT ENGINE ====================
+            let currentThemeMode = "{{ theme_mode or 'light' }}";
+            let currentAccentColor = "{{ accent_color or '#4f46e5' }}";
+            let settingsSaveTimeout = null;
+
+            function hexToRgb(hex) {
+                const clean = hex.replace('#', '');
+                const num = parseInt(clean, 16);
+                return {
+                    r: (num >> 16) & 255,
+                    g: (num >> 8) & 255,
+                    b: num & 255
+                };
+            }
+
+            function darkenHex(hex, amount = 18) {
+                const { r, g, b } = hexToRgb(hex);
+                const nr = Math.max(0, r - amount);
+                const ng = Math.max(0, g - amount);
+                const nb = Math.max(0, b - amount);
+                return `#${[nr, ng, nb].map(v => v.toString(16).padStart(2, '0')).join('')}`;
+            }
+
+            function persistAccountSettings() {
+                clearTimeout(settingsSaveTimeout);
+                settingsSaveTimeout = setTimeout(() => {
+                    fetch('/api/settings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            theme_mode: currentThemeMode,
+                            accent_color: currentAccentColor
+                        })
+                    }).catch(err => console.error('Failed to save appearance settings:', err));
+                }, 250);
+            }
+
+            function setAccentColor(hex, shouldPersist = true) {
+                if (!hex) hex = '#4f46e5';
+                currentAccentColor = hex;
+                const { r, g, b } = hexToRgb(hex);
+                const hoverHex = darkenHex(hex, 20);
+
+                document.documentElement.style.setProperty('--accent', hex);
+                document.documentElement.style.setProperty('--accent-hover', hoverHex);
+                document.documentElement.style.setProperty('--accent-soft', `rgba(${r}, ${g}, ${b}, 0.12)`);
+                document.documentElement.style.setProperty('--accent-border', `rgba(${r}, ${g}, ${b}, 0.30)`);
+
+                localStorage.setItem('tracker_accent_color', hex);
+
+                const picker = document.getElementById('custom-accent-picker');
+                const hexLabel = document.getElementById('custom-color-hex');
+                if (picker) picker.value = hex;
+                if (hexLabel) hexLabel.innerText = hex.toUpperCase();
+
+                document.querySelectorAll('.accent-swatch').forEach(btn => {
+                    if (btn.dataset.color.toLowerCase() === hex.toLowerCase()) {
+                        btn.classList.add('ring-2', 'ring-offset-2', 'ring-gray-400', 'scale-105');
+                    } else {
+                        btn.classList.remove('ring-2', 'ring-offset-2', 'ring-gray-400', 'scale-105');
+                    }
+                });
+
+                if (shouldPersist) {
+                    persistAccountSettings();
+                }
+            }
+
+            function setThemeMode(mode, shouldPersist = true) {
+                currentThemeMode = mode === 'dark' ? 'dark' : 'light';
+                const isDark = currentThemeMode === 'dark';
+
+                document.body.classList.toggle('dark-mode', isDark);
+                localStorage.setItem('tracker_theme_mode', currentThemeMode);
+
+                const lightBtn = document.getElementById('theme-light-btn');
+                const darkBtn = document.getElementById('theme-dark-btn');
+                if (lightBtn && darkBtn) {
+                    if (isDark) {
+                        darkBtn.className = 'py-3 px-4 rounded-xl border-2 border-indigo-300 bg-indigo-50 text-indigo-600 font-bold text-sm flex items-center justify-center gap-2 transition';
+                        lightBtn.className = 'py-3 px-4 rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-500 font-bold text-sm flex items-center justify-center gap-2 transition';
+                    } else {
+                        lightBtn.className = 'py-3 px-4 rounded-xl border-2 border-indigo-300 bg-indigo-50 text-indigo-600 font-bold text-sm flex items-center justify-center gap-2 transition';
+                        darkBtn.className = 'py-3 px-4 rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-500 font-bold text-sm flex items-center justify-center gap-2 transition';
+                    }
+                }
+
+                if (shouldPersist) {
+                    persistAccountSettings();
+                }
+            }
+
+            // Apply saved account appearance immediately on page load
+            (function initAppearance() {
+                setThemeMode(currentThemeMode, false);
+                setAccentColor(currentAccentColor, false);
+            })();
+
+            // ==================== APP STATE & NAVIGATION ====================
             let dailyGoal = {{ daily_goal }};
             let macroTargets = {
                 protein: {{ macro_targets.protein }},
@@ -633,6 +958,7 @@
             let lastAIRecommendation = null;
             let activeMealType = 'breakfast';
             let currentActiveTab = 'tracker';
+            let lastMainTab = 'tracker';
             let selectedFriendUsername = null;
 
             const MEAL_CATEGORIES = [
@@ -641,6 +967,19 @@
                 { key: 'dinner', label: 'Dinner' },
                 { key: 'snack', label: 'Snack' }
             ];
+
+            function toggleSettingsView() {
+                if (currentActiveTab === 'settings') {
+                    closeSettingsView();
+                } else {
+                    lastMainTab = currentActiveTab;
+                    switchView('settings');
+                }
+            }
+
+            function closeSettingsView() {
+                switchView(lastMainTab || 'tracker');
+            }
 
             function openCommandBox(mealType) {
                 activeMealType = mealType;
@@ -725,28 +1064,43 @@
             let calendarViewMonth = new Date().getMonth();
             let loggedDatesSet = new Set();
 
-            // Switch between Tracker, Friends, and Profile tabs
+            // Switch between Tracker, Friends, Profile, and Settings
             function switchView(viewName) {
                 currentActiveTab = viewName;
-                const views = ['tracker', 'friends', 'profile'];
-                views.forEach(v => {
+                const allViews = ['tracker', 'friends', 'profile', 'settings'];
+                allViews.forEach(v => {
                     const viewEl = document.getElementById(`${v}-view`);
-                    const btnEl = document.getElementById(`tab-btn-${v}`);
-                    if (v === viewName) {
-                        viewEl.classList.remove('hidden');
+                    if (viewEl) {
+                        if (v === viewName) viewEl.classList.remove('hidden');
+                        else viewEl.classList.add('hidden');
+                    }
+                });
+
+                const mainTabs = ['tracker', 'friends', 'profile'];
+                mainTabs.forEach(t => {
+                    const btnEl = document.getElementById(`tab-btn-${t}`);
+                    if (t === viewName) {
                         btnEl.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition bg-indigo-600 text-white shadow-xs';
                     } else {
-                        viewEl.classList.add('hidden');
                         btnEl.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition text-gray-600 hover:text-indigo-600 relative';
                     }
                 });
 
+                const settingsBtn = document.getElementById('header-settings-btn');
+                if (viewName === 'settings') {
+                    settingsBtn.className = 'text-xs bg-indigo-600 text-white border border-indigo-200 font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-xs';
+                } else {
+                    settingsBtn.className = 'text-xs bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-2xs';
+                }
+
                 const dateNav = document.getElementById('date-nav-container');
-                if (viewName === 'profile') {
+                if (viewName === 'profile' || viewName === 'settings') {
                     dateNav.classList.add('hidden');
-                    document.getElementById('weight-date-input').value = isoToEU(selectedDate);
-                    loadProfileDetails();
-                    loadWeightHistory();
+                    if (viewName === 'profile') {
+                        document.getElementById('weight-date-input').value = isoToEU(selectedDate);
+                        loadProfileDetails();
+                        loadWeightHistory();
+                    }
                 } else if (viewName === 'friends') {
                     dateNav.classList.remove('hidden');
                     loadFriendsList();
@@ -765,7 +1119,6 @@
                 if (!res.ok) return;
                 const data = await res.json();
 
-                // Update notification dot if someone added you
                 const dot = document.getElementById('friends-incoming-dot');
                 if (data.incoming && data.incoming.length > 0) {
                     dot.classList.remove('hidden');
@@ -773,7 +1126,6 @@
                     dot.classList.add('hidden');
                 }
 
-                // 1. Incoming requests
                 const incomingCard = document.getElementById('incoming-friends-card');
                 const incomingList = document.getElementById('incoming-friends-list');
                 if (data.incoming && data.incoming.length > 0) {
@@ -796,7 +1148,6 @@
                     incomingCard.classList.add('hidden');
                 }
 
-                // 2. Mutual Friends (No Progress button, no protein summary text)
                 const mutualList = document.getElementById('mutual-friends-list');
                 if (!data.mutual || data.mutual.length === 0) {
                     mutualList.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">No mutual friends yet. Add someone by username above!</p>';
@@ -822,7 +1173,6 @@
                     }).join('');
                 }
 
-                // 3. Outgoing pending
                 const outgoingCard = document.getElementById('outgoing-friends-card');
                 const outgoingList = document.getElementById('outgoing-friends-list');
                 if (data.outgoing && data.outgoing.length > 0) {
@@ -957,7 +1307,6 @@
                 document.getElementById('friend-fib-target').innerText = mt.fiber;
                 document.getElementById('friend-fib-bar').style.width = `${Math.min((totalFib / (mt.fiber || 1)) * 100, 100)}%`;
 
-                // Render read-only meals grouped by Breakfast, Lunch, Dinner, Snack
                 const sectionsEl = document.getElementById('friend-meals-sections');
                 sectionsEl.innerHTML = MEAL_CATEGORIES.map(cat => {
                     const items = data.meals.filter(m => m.meal_type === cat.key);
@@ -1448,16 +1797,25 @@
                 return cleanPortions === 1 ? scaledText : `${cleanPortions}x ${scaledText}`;
             }
 
+            function clearSearchInput() {
+                clearTimeout(searchTimeout);
+                document.getElementById('loading-spinner').classList.add('hidden');
+                resetSelection();
+                document.getElementById('food-name').focus();
+            }
+
             function handleSearch() {
                 clearTimeout(searchTimeout);
                 const query = document.getElementById('food-name').value.trim();
                 const box = document.getElementById('suggestions-box');
                 const clearBtn = document.getElementById('clear-search-btn');
+                const spinner = document.getElementById('loading-spinner');
 
                 if (query.length > 0) {
                     clearBtn.classList.remove('hidden');
                 } else {
                     clearBtn.classList.add('hidden');
+                    spinner.classList.add('hidden');
                     resetSelection();
                     return;
                 }
@@ -1467,11 +1825,11 @@
 
                 if (query.length < 2) {
                     box.classList.add('hidden');
+                    spinner.classList.add('hidden');
                     return;
                 }
 
-                document.getElementById('loading-spinner').classList.remove('hidden');
-                clearBtn.classList.add('hidden');
+                spinner.classList.remove('hidden');
                 searchTimeout = setTimeout(() => fetchFoodFromBackend(query), 550);
             }
 
@@ -1484,7 +1842,12 @@
                     const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
                     const validProducts = await response.json();
                     spinner.classList.add('hidden');
-                    clearBtn.classList.remove('hidden');
+
+                    if (document.getElementById('food-name').value.trim().length > 0) {
+                        clearBtn.classList.remove('hidden');
+                    } else {
+                        return;
+                    }
 
                     if (validProducts.length === 0) {
                         box.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">No match found. Try describing it differently.</div>`;
@@ -1509,7 +1872,6 @@
                     box.classList.remove('hidden');
                 } catch (error) {
                     spinner.classList.add('hidden');
-                    clearBtn.classList.remove('hidden');
                     console.error("Server error:", error);
                 }
             }
@@ -1531,6 +1893,7 @@
 
                 currentPreviewPortions = 1;
                 document.getElementById('food-name').value = selectedFood.name;
+                document.getElementById('clear-search-btn').classList.remove('hidden');
                 document.getElementById('suggestions-box').classList.add('hidden');
                 document.getElementById('preview-name').innerText = selectedFood.name;
 
@@ -1614,6 +1977,7 @@
                 document.getElementById('suggestions-box').classList.add('hidden');
                 document.getElementById('preview-card').classList.add('hidden');
                 document.getElementById('clear-search-btn').classList.add('hidden');
+                document.getElementById('loading-spinner').classList.add('hidden');
             }
 
             document.addEventListener('click', function(e) {
